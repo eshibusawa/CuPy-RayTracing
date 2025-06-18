@@ -50,7 +50,7 @@ public:
   __device__ virtual ~hittable()
   {
   }
-  __device__ virtual bool hit(const ray& r, float ray_tmin, float ray_tmax, hit_record& rec) const = 0;
+  __device__ virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
 };
 
 #endif // HITTABLE_CUH_
