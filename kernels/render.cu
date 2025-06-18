@@ -22,6 +22,18 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+__constant__ vec3 g_cameraCenter;
+__constant__ vec3 g_pixelDeltaU;
+__constant__ vec3 g_pixelDeltaV;
+__constant__ vec3 g_pixel00Loc;
+
+__device__ vec3 color(const ray& r)
+{
+  vec3 unit_direction = unit_vector(r.direction());
+  float a = 0.5f * (unit_direction.y() + 1.0f);
+  return (1.0f - a) * vec3(1.0f, 1.0f, 1.0f) + a *vec3(0.5f, 0.7f, 1.0f);
+}
+
 extern "C" __global__ void render(vec3 *output)
 {
   const int indexX = threadIdx.x + blockIdx.x * blockDim.x;
@@ -30,7 +42,10 @@ extern "C" __global__ void render(vec3 *output)
   {
     return;
   }
+  auto pixelCenter = g_pixel00Loc + (float(indexX) * g_pixelDeltaU) + (float(indexY) * g_pixelDeltaV);
+  auto rayDirection = pixelCenter - g_cameraCenter;
+  ray r(g_cameraCenter, rayDirection);
 
   const int index = indexY * (RTOW_WIDTH) + indexX;
-  output[index] = vec3(float(indexX) / (RTOW_WIDTH), float(indexY) / (RTOW_HEIGHT), 0.2f);
+  output[index] = color(r);
 }

@@ -22,54 +22,27 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef VEC3_CUH_
-#define VEC3_CUH_
+#ifndef RAY_CUH_
+#define RAY_CUH_
 
-class vec3
+using point3 = vec3;
+
+class ray
 {
 public:
-  __device__ vec3()
+  __device__ ray()
   {
   }
-  __device__ vec3(float e0, float e1, float e2)
+  __device__ ray(const point3& origin, const vec3& direction) : orig(origin), dir(direction)
   {
-    e[0] = e0;
-    e[1] = e1;
-    e[2] = e2;
   }
-  __device__ inline float y() const
+  __device__ vec3 direction() const
   {
-    return e[1];
+    return dir;
   }
-  __device__ inline float length() const
-  {
-    return norm3df(e[0], e[1], e[2]);
-  }
-  float e[3];
+private:
+  point3 orig;
+  vec3 dir;
 };
 
-__device__ inline vec3 operator+(const vec3& u, const vec3& v)
-{
-  return vec3(u.e[0] + v.e[0], u.e[1] + v.e[1], u.e[2] + v.e[2]);
-}
-
-__device__ inline vec3 operator-(const vec3& u, const vec3& v)
-{
-  return vec3(u.e[0] - v.e[0], u.e[1] - v.e[1], u.e[2] - v.e[2]);
-}
-
-__device__ inline vec3 operator*(float t, const vec3 &v)
-{
-  return vec3(t*v.e[0], t*v.e[1], t*v.e[2]);
-}
-
-__device__ inline vec3 operator/(vec3 v, float t)
-{
-  return vec3(v.e[0]/t, v.e[1]/t, v.e[2]/t);
-}
-
-__device__ inline vec3 unit_vector(vec3 v)
-{
-  return v / v.length();
-}
-#endif // VEC3_CUH_
+#endif // RAY_CUH_
