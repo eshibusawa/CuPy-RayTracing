@@ -1,0 +1,14 @@
+name: CuPy-RayTracing
+channels:
+  - conda-forge
+dependencies:
+  - cudatoolkit=11.8.0
+  - cupy
+  - ipython
+  - jupyter
+  - matplotlib
+  - nbconvert
+  - nose
+  - pip
+  - python=3.10.*
+prefix: /path/to/your/envs/CuPy-RayTracing
