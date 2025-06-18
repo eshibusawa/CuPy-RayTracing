@@ -22,43 +22,34 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef INTERVAL_CUH_
-#define INTERVAL_CUH_
+#ifndef RAND_MLS_CUH_
+#define RAND_MLS_CUH_
 
-class interval
+// It is desiable to use cuRAND, however this implementation uses random generator based on maximum legth sequence
+// https://github.com/cupy/cupy/issues/1431
+inline __device__ unsigned long int lsfr(unsigned long int &randomState)
 {
-public:
-  float min, max;
-
-  __device__ interval() : min(+RTOW_FLT_MAX), max(-RTOW_FLT_MAX) // Default interval is empty
+  const unsigned long int mask = ((1UL << 6) | (1UL << 4) | (1UL << 2) | (1UL << 1) | (1UL << 0));
+  if (randomState & (1UL << 31))
   {
+    randomState = ((randomState ^ mask) << 1) | 1UL;
   }
-
-  __device__ interval(float min, float max) : min(min), max(max)
+  else
   {
+    randomState <<= 1;
   }
+  return randomState;
+}
 
-  __device__ float size() const
-  {
-    return max - min;
-  }
+inline __device__ float unif(unsigned long int &randomState)
+{
+  return (lsfr(randomState) & 0xffffffffUL) / static_cast<float>(0xffffffffUL + 1.f);
+}
 
-  __device__ bool contains(float x) const
-  {
-    return min <= x && x <= max;
-  }
+inline __device__ float unifBetween(float minValue, float maxValue, unsigned long int &randomState)
+{
+  float s = maxValue - minValue;
+  return unif(randomState) * s + minValue;
+}
 
-  __device__ bool surrounds(float x) const
-  {
-    return min < x && x < max;
-  }
-
-  __device__ float clamp(float x) const
-  {
-    if (x < min) return min;
-    if (x > max) return max;
-    return x;
-  }
-};
-
-#endif // INTERVAL_CUH_
+#endif // RAND_MLS_CUH_

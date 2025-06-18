@@ -53,6 +53,20 @@ public:
   {
     return vec3(-e[0], -e[1], -e[2]);
   }
+  __device__ inline vec3& operator+=(const vec3& v)
+  {
+    e[0] += v.e[0];
+    e[1] += v.e[1];
+    e[2] += v.e[2];
+    return *this;
+  }
+  __device__ inline vec3& operator*=(float t)
+  {
+    e[0] *= t;
+    e[1] *= t;
+    e[2] *= t;
+    return *this;
+  }
   __device__ inline float length() const
   {
     return norm3df(e[0], e[1], e[2]);

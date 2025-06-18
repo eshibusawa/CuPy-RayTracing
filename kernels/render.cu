@@ -43,7 +43,25 @@ __device__ color ray_color(const ray& r, const hittable& world)
   return (1.0f - a) * vec3(1.0f, 1.0f, 1.0f) + a *vec3(0.5f, 0.7f, 1.0f);
 }
 
-extern "C" __global__ void render(vec3 *output, unsigned long *world_ptr)
+__device__ vec3 sample_square(unsigned long &randomState)
+{
+  // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
+  return vec3(unifBetween(-.5f, .5f, randomState), unifBetween(-.5f, .5f, randomState), 0);
+}
+
+__device__ ray get_ray(int i, int j, unsigned long &randomState)
+{
+  // Construct a camera ray originating from the origin and directed at randomly sampled
+  // point around the pixel location i, j.
+  auto offset = sample_square(randomState);
+  auto pixelSample = g_pixel00Loc + ((offset.x() + i) * g_pixelDeltaU) + ((offset.y() + j) * g_pixelDeltaV);
+  auto rayDirection = pixelSample - g_cameraCenter;
+  ray r(g_cameraCenter, rayDirection);
+
+  return r;
+}
+
+extern "C" __global__ void render(vec3 *output, unsigned long *world_ptr, unsigned long int *randomState)
 {
   const int indexX = threadIdx.x + blockIdx.x * blockDim.x;
   const int indexY = threadIdx.y + blockIdx.y * blockDim.y;
@@ -51,11 +69,18 @@ extern "C" __global__ void render(vec3 *output, unsigned long *world_ptr)
   {
     return;
   }
-  auto pixelCenter = g_pixel00Loc + (float(indexX) * g_pixelDeltaU) + (float(indexY) * g_pixelDeltaV);
-  auto rayDirection = pixelCenter - g_cameraCenter;
-  ray r(g_cameraCenter, rayDirection);
 
   const int index = indexY * (RTOW_WIDTH) + indexX;
   hittable *world = reinterpret_cast<hittable *>(world_ptr[0]);
-  output[index] = ray_color(r, *world);
+  unsigned long int lrs = randomState[index]; // local random state
+  color pixel_color(0, 0, 0);
+  #pragma unroll
+  for (int sample = 0; sample < (RTOW_SAMPLES_PER_PIXEL); sample++)
+  {
+    ray r = get_ray(indexX, indexY, lrs);
+    pixel_color += ray_color(r, *world);
+  }
+  pixel_color *= (RTOW_PIXEL_SAMPLE_SCALE);
+  const interval intensity(0.f, 0.999f);
+  output[index] = color(intensity.clamp(pixel_color.x()), intensity.clamp(pixel_color.y()), intensity.clamp(pixel_color.z()));
 }

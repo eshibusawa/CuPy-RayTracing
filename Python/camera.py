@@ -46,9 +46,12 @@ class Camera():
     def setup_module(self) -> None:
         image_width = self.settings.image_width
         image_height = self.settings.image_height
+        samples_per_pixel = self.settings.samples_per_pixel
 
         cuda_source = self.cuda_source
         cuda_source = cuda_source.replace('RTOW_FLT_MAX', str(cp.finfo(cp.float32).max) + 'f')
+        cuda_source = cuda_source.replace('RTOW_SAMPLES_PER_PIXEL', str(samples_per_pixel))
+        cuda_source = cuda_source.replace('RTOW_PIXEL_SAMPLE_SCALE', str(1.0/samples_per_pixel) + 'f')
         cuda_source = cuda_source.replace('RTOW_WIDTH', str(image_width))
         cuda_source = cuda_source.replace('RTOW_HEIGHT', str(image_height))
 
@@ -82,13 +85,17 @@ class Camera():
         img_gpu = cp.empty((image_height, image_width, 3), dtype=cp.float32)
         assert img_gpu.flags.c_contiguous
 
+        random_state = cp.random.randint(0, 12345678, (image_height, image_width), dtype=cp.uint64)
+        assert random_state.flags.c_contiguous
+
         gpu_func = self.module.get_function('render')
         sz_block = 32, 32
         sz_grid = math.ceil(image_width / sz_block[1]), math.ceil(image_height / sz_block[0])
         gpu_func(
         block=sz_block, grid=sz_grid,
         args=(img_gpu,
-                world.world_ptr)
+                world.world_ptr,
+                random_state)
         )
         cp.cuda.runtime.deviceSynchronize()
 
