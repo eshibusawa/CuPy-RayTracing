@@ -27,8 +27,25 @@ __constant__ vec3 g_pixelDeltaU;
 __constant__ vec3 g_pixelDeltaV;
 __constant__ vec3 g_pixel00Loc;
 
-__device__ vec3 color(const ray& r)
+using color = vec3;
+using point3 = vec3;
+
+__device__ bool hit_sphere(const point3& center, double radius, const ray& r)
 {
+  vec3 oc = center - r.origin();
+  auto a = dot(r.direction(), r.direction());
+  auto b = -2.0 * dot(r.direction(), oc);
+  auto c = dot(oc, oc) - radius*radius;
+  auto discriminant = b*b - 4*a*c;
+  return (discriminant >= 0);
+}
+
+__device__ vec3 ray_color(const ray& r)
+{
+  if (hit_sphere(point3(0,0,-1), 0.5, r))
+  {
+    return color(1, 0, 0);
+  }
   vec3 unit_direction = unit_vector(r.direction());
   float a = 0.5f * (unit_direction.y() + 1.0f);
   return (1.0f - a) * vec3(1.0f, 1.0f, 1.0f) + a *vec3(0.5f, 0.7f, 1.0f);
@@ -47,5 +64,5 @@ extern "C" __global__ void render(vec3 *output)
   ray r(g_cameraCenter, rayDirection);
 
   const int index = indexY * (RTOW_WIDTH) + indexX;
-  output[index] = color(r);
+  output[index] = ray_color(r);
 }
