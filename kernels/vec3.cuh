@@ -37,9 +37,17 @@ public:
     e[1] = e1;
     e[2] = e2;
   }
+  __device__ inline float x() const
+  {
+    return e[0];
+  }
   __device__ inline float y() const
   {
     return e[1];
+  }
+  __device__ inline float z() const
+  {
+    return e[2];
   }
   __device__ inline float length() const
   {

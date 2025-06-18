@@ -44,6 +44,10 @@ public:
   {
     return dir;
   }
+  __device__ point3 at(double t) const
+  {
+    return orig + t*dir;
+  }
 private:
   point3 orig;
   vec3 dir;

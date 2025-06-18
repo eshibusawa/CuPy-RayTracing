@@ -30,22 +30,32 @@ __constant__ vec3 g_pixel00Loc;
 using color = vec3;
 using point3 = vec3;
 
-__device__ bool hit_sphere(const point3& center, double radius, const ray& r)
+__device__ float hit_sphere(const point3& center, double radius, const ray& r)
 {
   vec3 oc = center - r.origin();
   auto a = dot(r.direction(), r.direction());
   auto b = -2.0 * dot(r.direction(), oc);
   auto c = dot(oc, oc) - radius*radius;
   auto discriminant = b*b - 4*a*c;
-  return (discriminant >= 0);
+  if (discriminant < 0)
+  {
+    return -1.0f;
+  }
+  else
+  {
+    return (-b - sqrtf(discriminant) ) / (2.0f * a);
+  }
 }
 
 __device__ vec3 ray_color(const ray& r)
 {
-  if (hit_sphere(point3(0,0,-1), 0.5, r))
+  auto t = hit_sphere(point3(0, 0, -1), 0.5f, r);
+  if (t > 0.0)
   {
-    return color(1, 0, 0);
+    vec3 N = unit_vector(r.at(t) - vec3(0, 0, -1));
+    return 0.5f * color(N.x()+1, N.y()+1, N.z()+1);
   }
+
   vec3 unit_direction = unit_vector(r.direction());
   float a = 0.5f * (unit_direction.y() + 1.0f);
   return (1.0f - a) * vec3(1.0f, 1.0f, 1.0f) + a *vec3(0.5f, 0.7f, 1.0f);
