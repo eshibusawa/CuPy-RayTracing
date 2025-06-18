@@ -22,76 +22,33 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef VEC3_CUH_
-#define VEC3_CUH_
+#ifndef HITTABLE_CUH_
+#define HITTABLE_CUH_
 
-class vec3
+class hit_record
 {
 public:
-  __device__ vec3()
+  using point3 = vec3;
+  point3 p;
+  vec3 normal;
+  float t;
+  bool front_face;
+
+  __device__ void set_face_normal(const ray& r, const vec3& outward_normal)
   {
+    // Sets the hit record normal vector.
+    // NOTE: the parameter `outward_normal` is assumed to have unit length.
+
+    front_face = dot(r.direction(), outward_normal) < 0;
+    normal = front_face ? outward_normal : -outward_normal;
   }
-  __device__ vec3(float e0, float e1, float e2)
-  {
-    e[0] = e0;
-    e[1] = e1;
-    e[2] = e2;
-  }
-  __device__ inline float x() const
-  {
-    return e[0];
-  }
-  __device__ inline float y() const
-  {
-    return e[1];
-  }
-  __device__ inline float z() const
-  {
-    return e[2];
-  }
-  __device__ inline vec3 operator-() const
-  {
-    return vec3(-e[0], -e[1], -e[2]);
-  }
-  __device__ inline float length() const
-  {
-    return norm3df(e[0], e[1], e[2]);
-  }
-  __device__ inline float length_squared() const
-  {
-    return fmaf(e[2], e[2], fmaf(e[1], e[1], e[0]*e[0]));
-  }
-  float e[3];
 };
 
-__device__ inline vec3 operator+(const vec3& u, const vec3& v)
+class hittable
 {
-  return vec3(u.e[0] + v.e[0], u.e[1] + v.e[1], u.e[2] + v.e[2]);
-}
+public:
+  __device__ virtual ~hittable() = default;
+  __device__ virtual bool hit(const ray& r, float ray_tmin, float ray_tmax, hit_record& rec) const = 0;
+};
 
-__device__ inline vec3 operator-(const vec3& u, const vec3& v)
-{
-  return vec3(u.e[0] - v.e[0], u.e[1] - v.e[1], u.e[2] - v.e[2]);
-}
-
-__device__ inline vec3 operator*(float t, const vec3 &v)
-{
-  return vec3(t*v.e[0], t*v.e[1], t*v.e[2]);
-}
-
-__device__ inline vec3 operator/(const vec3 &v, float t)
-{
-  return vec3(v.e[0]/t, v.e[1]/t, v.e[2]/t);
-}
-
-__device__ inline double dot(const vec3& u, const vec3& v)
-{
-  return u.e[0] * v.e[0] + u.e[1] * v.e[1] + u.e[2] * v.e[2];
-}
-
-__device__ inline vec3 unit_vector(const vec3 &v)
-{
-  return v / v.length();
-}
-
-#endif // VEC3_CUH_
+#endif // HITTABLE_CUH_

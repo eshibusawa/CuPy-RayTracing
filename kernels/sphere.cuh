@@ -22,76 +22,55 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef VEC3_CUH_
-#define VEC3_CUH_
+#ifndef SHPERE_CUH_
+#define SHPERE_CUH_
 
-class vec3
+using color = vec3;
+using point3 = vec3;
+
+class sphere : public hittable
 {
 public:
-  __device__ vec3()
+  __device__ sphere(const point3& center, float radius) : center(center), radius(fmaxf(0, radius))
   {
   }
-  __device__ vec3(float e0, float e1, float e2)
+
+  __device__ bool hit(const ray& r, float ray_tmin, float ray_tmax, hit_record& rec) const override
   {
-    e[0] = e0;
-    e[1] = e1;
-    e[2] = e2;
+      vec3 oc = center - r.origin();
+      auto a = r.direction().length_squared();
+      auto h = dot(r.direction(), oc);
+      auto c = oc.length_squared() - radius*radius;
+
+      auto discriminant = h*h - a*c;
+      if (discriminant < 0)
+      {
+        return false;
+      }
+
+      auto sqrtd = sqrtf(discriminant);
+
+      auto root = (h - sqrtd) / a;
+      if (root <= ray_tmin || ray_tmax <= root)
+      {
+        root = (h + sqrtd) / a;
+        if (root <= ray_tmin || ray_tmax <= root)
+        {
+          return false;
+        }
+      }
+
+      rec.t = root;
+      rec.p = r.at(rec.t);
+      vec3 outward_normal = (rec.p - center) / radius;
+      rec.set_face_normal(r, outward_normal);
+
+      return true;
   }
-  __device__ inline float x() const
-  {
-    return e[0];
-  }
-  __device__ inline float y() const
-  {
-    return e[1];
-  }
-  __device__ inline float z() const
-  {
-    return e[2];
-  }
-  __device__ inline vec3 operator-() const
-  {
-    return vec3(-e[0], -e[1], -e[2]);
-  }
-  __device__ inline float length() const
-  {
-    return norm3df(e[0], e[1], e[2]);
-  }
-  __device__ inline float length_squared() const
-  {
-    return fmaf(e[2], e[2], fmaf(e[1], e[1], e[0]*e[0]));
-  }
-  float e[3];
+
+private:
+  point3 center;
+  double radius;
 };
 
-__device__ inline vec3 operator+(const vec3& u, const vec3& v)
-{
-  return vec3(u.e[0] + v.e[0], u.e[1] + v.e[1], u.e[2] + v.e[2]);
-}
-
-__device__ inline vec3 operator-(const vec3& u, const vec3& v)
-{
-  return vec3(u.e[0] - v.e[0], u.e[1] - v.e[1], u.e[2] - v.e[2]);
-}
-
-__device__ inline vec3 operator*(float t, const vec3 &v)
-{
-  return vec3(t*v.e[0], t*v.e[1], t*v.e[2]);
-}
-
-__device__ inline vec3 operator/(const vec3 &v, float t)
-{
-  return vec3(v.e[0]/t, v.e[1]/t, v.e[2]/t);
-}
-
-__device__ inline double dot(const vec3& u, const vec3& v)
-{
-  return u.e[0] * v.e[0] + u.e[1] * v.e[1] + u.e[2] * v.e[2];
-}
-
-__device__ inline vec3 unit_vector(const vec3 &v)
-{
-  return v / v.length();
-}
-
-#endif // VEC3_CUH_
+#endif // SHPERE_CUH_
