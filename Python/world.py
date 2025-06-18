@@ -1,0 +1,65 @@
+# This file is part of CuPy-RayTracing.
+# Copyright (c) 2025, Eijiro Shibusawa <phd_kimberlite@yahoo.co.jp>
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import cupy as cp
+
+class world():
+    def __init__(self, module: cp.RawModule) -> None:
+        self.module = module
+        sz = cp.empty((1), dtype=cp.int32)
+        gpu_func = self.module.get_function('getPointerSize')
+        sz_block = 1,
+        sz_grid = 1,
+        gpu_func(
+            block=sz_block, grid=sz_grid,
+            args=(sz)
+        )
+        cp.cuda.runtime.deviceSynchronize()
+        sz = sz.get()
+        self.sz = int(sz[0])
+
+        assert self.sz == 8 # pointer size on GPU is assumed to 64bit
+        self.objects_ptr = cp.zeros((2,), dtype=cp.uint64)
+        self.world_ptr = cp.zeros((1,), dtype=cp.uint64)
+
+        gpu_func = self.module.get_function('createWorld')
+        sz_block = 1,
+        sz_grid = 1,
+        gpu_func(
+            block=sz_block, grid=sz_grid,
+            args=(self.objects_ptr,
+                  self.world_ptr)
+        )
+        cp.cuda.runtime.deviceSynchronize()
+
+    def __del__(self) -> None:
+        gpu_func = self.module.get_function('destroyWorld')
+        sz_block = 1,
+        sz_grid = 1,
+        gpu_func(
+            block=sz_block, grid=sz_grid,
+            args=(self.objects_ptr,
+                  self.world_ptr)
+        )
+        cp.cuda.runtime.deviceSynchronize()

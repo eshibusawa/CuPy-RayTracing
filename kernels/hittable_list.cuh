@@ -22,35 +22,47 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef HITTABLE_CUH_
-#define HITTABLE_CUH_
+#ifndef HITTABLE_LIST_CUH_
+#define HITTABLE_LIST_CUH_
 
-class hit_record
+class hittable_list : public hittable
 {
 public:
-  using point3 = vec3;
-  point3 p;
-  vec3 normal;
-  float t;
-  bool front_face;
-
-  __device__ void set_face_normal(const ray& r, const vec3& outward_normal)
+  hittable **objects;
+  int object_count;
+  __device__ hittable_list() : objects(nullptr), object_count(0)
   {
-    // Sets the hit record normal vector.
-    // NOTE: the parameter `outward_normal` is assumed to have unit length.
+  }
+  __device__ hittable_list(hittable **l, int n) : objects(nullptr), object_count(n)
+  {
+    objects = new hittable*[object_count];
+    for (int i = 0; i < object_count; i++)
+    {
+      objects[i] = l[i];
+    }
+  }
+  __device__ virtual ~hittable_list()
+  {
+    delete [] objects;
+  }
+  __device__ bool hit(const ray& r, float ray_tmin, float ray_tmax, hit_record& rec) const
+  {
+    hit_record temp_rec;
+    bool hit_anything = false;
+    auto closest_so_far = ray_tmax;
 
-    front_face = dot(r.direction(), outward_normal) < 0;
-    normal = front_face ? outward_normal : -outward_normal;
+    for (int i = 0; i < object_count; i++)
+    {
+      if (objects[i]->hit(r, ray_tmin, closest_so_far, temp_rec))
+      {
+        hit_anything = true;
+        closest_so_far = temp_rec.t;
+        rec = temp_rec;
+      }
+    }
+
+    return hit_anything;
   }
 };
 
-class hittable
-{
-public:
-  __device__ virtual ~hittable()
-  {
-  }
-  __device__ virtual bool hit(const ray& r, float ray_tmin, float ray_tmax, hit_record& rec) const = 0;
-};
-
-#endif // HITTABLE_CUH_
+#endif // HITTABLE_LIST_CUH_

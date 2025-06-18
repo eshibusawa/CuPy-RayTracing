@@ -30,30 +30,12 @@ __constant__ vec3 g_pixel00Loc;
 using color = vec3;
 using point3 = vec3;
 
-__device__ float hit_sphere(const point3& center, double radius, const ray& r)
+__device__ color ray_color(const ray& r, const hittable& world)
 {
-  vec3 oc = center - r.origin();
-  auto a = r.direction().length_squared();
-  auto h = dot(r.direction(), oc);
-  auto c = oc.length_squared() - radius*radius;
-  auto discriminant = h*h - a*c;
-  if (discriminant < 0)
+  hit_record rec;
+  if (world.hit(r, 0, RTOW_FLT_MAX, rec))
   {
-    return -1.0f;
-  }
-  else
-  {
-    return (h - sqrtf(discriminant)) / a;
-  }
-}
-
-__device__ vec3 ray_color(const ray& r)
-{
-  auto t = hit_sphere(point3(0, 0, -1), 0.5f, r);
-  if (t > 0.0)
-  {
-    vec3 N = unit_vector(r.at(t) - vec3(0, 0, -1));
-    return 0.5f * color(N.x()+1, N.y()+1, N.z()+1);
+    return 0.5f * (rec.normal + color(1, 1, 1));
   }
 
   vec3 unit_direction = unit_vector(r.direction());
@@ -61,7 +43,7 @@ __device__ vec3 ray_color(const ray& r)
   return (1.0f - a) * vec3(1.0f, 1.0f, 1.0f) + a *vec3(0.5f, 0.7f, 1.0f);
 }
 
-extern "C" __global__ void render(vec3 *output)
+extern "C" __global__ void render(vec3 *output, unsigned long *world_ptr)
 {
   const int indexX = threadIdx.x + blockIdx.x * blockDim.x;
   const int indexY = threadIdx.y + blockIdx.y * blockDim.y;
@@ -74,5 +56,6 @@ extern "C" __global__ void render(vec3 *output)
   ray r(g_cameraCenter, rayDirection);
 
   const int index = indexY * (RTOW_WIDTH) + indexX;
-  output[index] = ray_color(r);
+  hittable *world = reinterpret_cast<hittable *>(world_ptr[0]);
+  output[index] = ray_color(r, *world);
 }
