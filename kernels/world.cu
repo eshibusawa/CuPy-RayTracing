@@ -37,8 +37,8 @@ extern "C" __global__ void createWorld(unsigned long *objects_ptr, unsigned long
     material *materials[4];
     materials[0] = new lambertian(color(0.8f, 0.8f, 0));
     materials[1] = new lambertian(color(0.1f, 0.2f, 0.5f));
-    materials[2] = new metal(color(0.8f, 0.8f, 0.8f));
-    materials[3] = new metal(color(0.8f, 0.6f, 0.2f));
+    materials[2] = new metal(color(0.8f, 0.8f, 0.8f), 0.3f);
+    materials[3] = new metal(color(0.8f, 0.6f, 0.2f), 1);
 
     hittable *objects[4];
     objects[0] = new sphere(point3( 0, -100.5f, -1),    100,  materials[0]);
