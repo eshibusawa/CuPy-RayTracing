@@ -32,17 +32,30 @@ __constant__ vec3 g_pixel00Loc;
 using color = vec3;
 using point3 = vec3;
 
-__device__ color ray_color(const ray& r, const hittable& world)
+__device__ color ray_color(const ray& r, const hittable& world, curandStateXORWOW_t &randomState)
 {
-  hit_record rec;
-  if (world.hit(r, interval(0, RTOW_FLT_MAX), rec))
+  ray cur_ray = r;
+  float cur_attenuation = 1.f;
+
+  for(int i = 0; i < (RTOW_MAX_DEPTH); i++)
   {
-    return 0.5f * (rec.normal + color(1, 1, 1));
+    hit_record rec;
+    if (world.hit(cur_ray, interval(0, RTOW_FLT_MAX), rec))
+    {
+      vec3 direction = random_on_hemisphere(randomState, rec.normal);
+      cur_attenuation *= .5f;
+      cur_ray = ray(rec.p, direction);
+    }
+    else
+    {
+      vec3 unit_direction = unit_vector(cur_ray.direction());
+      float a = 0.5f * (unit_direction.y() + 1.0f);
+      color c = (1.0f - a) * vec3(1.0f, 1.0f, 1.0f) + a *vec3(0.5f, 0.7f, 1.0f);
+      return cur_attenuation * c;
+    }
   }
 
-  vec3 unit_direction = unit_vector(r.direction());
-  float a = 0.5f * (unit_direction.y() + 1.0f);
-  return (1.0f - a) * vec3(1.0f, 1.0f, 1.0f) + a *vec3(0.5f, 0.7f, 1.0f);
+  return vec3(0, 0, 0);
 }
 
 __device__ vec3 sample_square(curandStateXORWOW_t &randomState)
@@ -81,7 +94,7 @@ extern "C" __global__ void render(vec3 *output, unsigned long *world_ptr, unsign
   for (int sample = 0; sample < (RTOW_SAMPLES_PER_PIXEL); sample++)
   {
     ray r = get_ray(indexX, indexY, lrs);
-    pixel_color += ray_color(r, *world);
+    pixel_color += ray_color(r, *world, lrs);
   }
   pixel_color *= (RTOW_PIXEL_SAMPLE_SCALE);
   const interval intensity(0.f, 0.999f);

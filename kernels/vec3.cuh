@@ -98,7 +98,7 @@ __device__ inline vec3 operator/(const vec3 &v, float t)
   return vec3(v.e[0]/t, v.e[1]/t, v.e[2]/t);
 }
 
-__device__ inline double dot(const vec3& u, const vec3& v)
+__device__ inline float dot(const vec3& u, const vec3& v)
 {
   return u.e[0] * v.e[0] + u.e[1] * v.e[1] + u.e[2] * v.e[2];
 }
