@@ -22,38 +22,65 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef HITTABLE_CUH_
-#define HITTABLE_CUH_
+#ifndef MATERIAL_CUH_
+#define MATERIAL_CUH_
 
-class material;
+struct hit_record;
+using color = vec3;
 
-class hit_record
+__device__ vec3 reflect(const vec3& v, const vec3& n)
+{
+  return v - 2.0f * dot(v, n) * n;
+}
+
+class material
 {
 public:
-  using point3 = vec3;
-  point3 p;
-  vec3 normal;
-  material *mat;
-  float t;
-  bool front_face;
-
-  __device__ void set_face_normal(const ray& r, const vec3& outward_normal)
+  __device__ virtual ~material()
   {
-    // Sets the hit record normal vector.
-    // NOTE: the parameter `outward_normal` is assumed to have unit length.
-
-    front_face = dot(r.direction(), outward_normal) < 0;
-    normal = front_face ? outward_normal : -outward_normal;
+  }
+  __device__ virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered, curandStateXORWOW_t &randomState) const
+  {
+    return false;
   }
 };
 
-class hittable
+class lambertian : public material
 {
 public:
-  __device__ virtual ~hittable()
+  __device__ lambertian(const color& albedo) : albedo(albedo)
   {
   }
-  __device__ virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
+  __device__ bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandStateXORWOW_t &randomState) const override
+  {
+    auto scatter_direction = rec.normal + random_unit_vector(randomState);
+    if (scatter_direction.near_zero())
+    {
+      scatter_direction = rec.normal;
+    }
+    scattered = ray(rec.p, scatter_direction);
+    attenuation = albedo;
+    return true;
+  }
+
+  color albedo;
 };
 
-#endif // HITTABLE_CUH_
+class metal : public material
+{
+public:
+  __device__ metal(const color& albedo) : albedo(albedo)
+  {
+  }
+  __device__ bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandStateXORWOW_t &randomState) const override
+  {
+    vec3 reflected = reflect(r_in.direction(), rec.normal);
+    scattered = ray(rec.p, reflected);
+    attenuation = albedo;
+    return true;
+  }
+
+  color albedo;
+};
+
+#endif // MATERIAL_CUH_

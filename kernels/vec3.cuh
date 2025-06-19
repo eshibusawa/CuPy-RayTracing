@@ -75,6 +75,12 @@ public:
   {
     return fmaf(e[2], e[2], fmaf(e[1], e[1], e[0]*e[0]));
   }
+  __device__ inline bool near_zero() const
+  {
+    static const auto s(RTOW_FLT_NEAR_ZERO);
+    return (fabsf(e[0]) < s) && (fabsf(e[1]) < s) && (fabsf(e[2]) < s);
+  }
+
   float e[3];
 };
 
@@ -86,6 +92,11 @@ __device__ inline vec3 operator+(const vec3& u, const vec3& v)
 __device__ inline vec3 operator-(const vec3& u, const vec3& v)
 {
   return vec3(u.e[0] - v.e[0], u.e[1] - v.e[1], u.e[2] - v.e[2]);
+}
+
+__device__ inline vec3 operator*(const vec3& u, const vec3& v)
+{
+  return vec3(u.e[0] * v.e[0], u.e[1] * v.e[1], u.e[2] * v.e[2]);
 }
 
 __device__ inline vec3 operator*(float t, const vec3 &v)

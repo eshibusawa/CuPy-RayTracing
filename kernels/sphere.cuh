@@ -31,7 +31,7 @@ using point3 = vec3;
 class sphere : public hittable
 {
 public:
-  __device__ sphere(const point3& center, float radius) : center(center), radius(fmaxf(0, radius))
+  __device__ sphere(const point3& center, float radius, material *mat) : center(center), radius(fmaxf(0, radius)), mat(mat)
   {
   }
 
@@ -64,13 +64,15 @@ public:
       rec.p = r.at(rec.t);
       vec3 outward_normal = (rec.p - center) / radius;
       rec.set_face_normal(r, outward_normal);
+      rec.mat = mat;
 
       return true;
   }
 
 private:
   point3 center;
-  double radius;
+  float radius;
+  material *mat;
 };
 
 #endif // SHPERE_CUH_

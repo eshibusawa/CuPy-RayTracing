@@ -35,16 +35,24 @@ using point3 = vec3;
 __device__ color ray_color(const ray& r, const hittable& world, curandStateXORWOW_t &randomState)
 {
   ray cur_ray = r;
-  float cur_attenuation = 1.f;
+  color cur_attenuation = color(1.f, 1.f, 1.f);
 
   for(int i = 0; i < (RTOW_MAX_DEPTH); i++)
   {
     hit_record rec;
     if (world.hit(cur_ray, interval(0.001f, RTOW_FLT_MAX), rec))
     {
-      vec3 direction = rec.normal + random_unit_vector(randomState);
-      cur_attenuation *= .5f;
-      cur_ray = ray(rec.p, direction);
+      ray scattered;
+      color attenuation;
+      if (rec.mat->scatter(cur_ray, rec, attenuation, scattered, randomState))
+      {
+        cur_attenuation = cur_attenuation * attenuation;
+        cur_ray = scattered;
+      }
+      else
+      {
+        return vec3(0, 0, 0);
+      }
     }
     else
     {

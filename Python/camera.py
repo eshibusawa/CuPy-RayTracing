@@ -35,6 +35,7 @@ class CameraSettings():
         self.image_width = 100
         self.samples_per_pixel = 10
         self.max_depth = 10
+        self.sz_block = 16, 16
 
 class Camera():
     def __init__(self, settings: CameraSettings, cuda_source: str) -> None:
@@ -53,6 +54,7 @@ class Camera():
         cuda_source = self.cuda_source
         cuda_source = cuda_source.replace('RTOW_FLT_MAX', str(cp.finfo(cp.float32).max) + 'f')
         cuda_source = cuda_source.replace('RTOW_FLT_TINY', str(cp.finfo(cp.float32).tiny) + 'f')
+        cuda_source = cuda_source.replace('RTOW_FLT_NEAR_ZERO', str(1e-8) + 'f')
         cuda_source = cuda_source.replace('RTOW_SAMPLES_PER_PIXEL', str(samples_per_pixel))
         cuda_source = cuda_source.replace('RTOW_PIXEL_SAMPLE_SCALE', str(1.0/samples_per_pixel) + 'f')
         cuda_source = cuda_source.replace('RTOW_MAX_DEPTH', str(max_depth))
@@ -93,7 +95,7 @@ class Camera():
         random_state = cp.uint64(random_state.item())
 
         gpu_func = self.module.get_function('render')
-        sz_block = 16, 16
+        sz_block = self.settings.sz_block
         sz_grid = math.ceil(image_width / sz_block[0]), math.ceil(image_height / sz_block[1])
         gpu_func(
         block=sz_block, grid=sz_grid,

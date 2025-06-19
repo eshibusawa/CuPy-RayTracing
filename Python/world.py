@@ -40,7 +40,8 @@ class world():
         self.sz = int(sz[0])
 
         assert self.sz == 8 # pointer size on GPU is assumed to 64bit
-        self.objects_ptr = cp.zeros((2,), dtype=cp.uint64)
+        self.objects_ptr = cp.zeros((4,), dtype=cp.uint64)
+        self.materials_ptr = cp.zeros((4,), dtype=cp.uint64)
         self.world_ptr = cp.zeros((1,), dtype=cp.uint64)
 
         gpu_func = self.module.get_function('createWorld')
@@ -49,6 +50,7 @@ class world():
         gpu_func(
             block=sz_block, grid=sz_grid,
             args=(self.objects_ptr,
+                  self.materials_ptr,
                   self.world_ptr)
         )
         cp.cuda.runtime.deviceSynchronize()
@@ -60,6 +62,7 @@ class world():
         gpu_func(
             block=sz_block, grid=sz_grid,
             args=(self.objects_ptr,
+                  self.materials_ptr,
                   self.world_ptr)
         )
         cp.cuda.runtime.deviceSynchronize()
