@@ -40,9 +40,9 @@ __device__ color ray_color(const ray& r, const hittable& world, curandStateXORWO
   for(int i = 0; i < (RTOW_MAX_DEPTH); i++)
   {
     hit_record rec;
-    if (world.hit(cur_ray, interval(0, RTOW_FLT_MAX), rec))
+    if (world.hit(cur_ray, interval(0.001f, RTOW_FLT_MAX), rec))
     {
-      vec3 direction = random_on_hemisphere(randomState, rec.normal);
+      vec3 direction = rec.normal + random_unit_vector(randomState);
       cur_attenuation *= .5f;
       cur_ray = ray(rec.p, direction);
     }
