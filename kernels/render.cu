@@ -22,6 +22,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <curand_kernel.h>
+
 __constant__ vec3 g_cameraCenter;
 __constant__ vec3 g_pixelDeltaU;
 __constant__ vec3 g_pixelDeltaV;
@@ -43,13 +45,13 @@ __device__ color ray_color(const ray& r, const hittable& world)
   return (1.0f - a) * vec3(1.0f, 1.0f, 1.0f) + a *vec3(0.5f, 0.7f, 1.0f);
 }
 
-__device__ vec3 sample_square(unsigned long &randomState)
+__device__ vec3 sample_square(curandStateXORWOW_t &randomState)
 {
   // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
-  return vec3(unifBetween(-.5f, .5f, randomState), unifBetween(-.5f, .5f, randomState), 0);
+  return vec3(curand_uniform(&randomState) - 0.5f, curand_uniform(&randomState) - 0.5f, 0);
 }
 
-__device__ ray get_ray(int i, int j, unsigned long &randomState)
+__device__ ray get_ray(int i, int j, curandStateXORWOW_t &randomState)
 {
   // Construct a camera ray originating from the origin and directed at randomly sampled
   // point around the pixel location i, j.
@@ -61,7 +63,7 @@ __device__ ray get_ray(int i, int j, unsigned long &randomState)
   return r;
 }
 
-extern "C" __global__ void render(vec3 *output, unsigned long *world_ptr, unsigned long int *randomState)
+extern "C" __global__ void render(vec3 *output, unsigned long *world_ptr, unsigned long long randomState)
 {
   const int indexX = threadIdx.x + blockIdx.x * blockDim.x;
   const int indexY = threadIdx.y + blockIdx.y * blockDim.y;
@@ -72,7 +74,8 @@ extern "C" __global__ void render(vec3 *output, unsigned long *world_ptr, unsign
 
   const int index = indexY * (RTOW_WIDTH) + indexX;
   hittable *world = reinterpret_cast<hittable *>(world_ptr[0]);
-  unsigned long int lrs = randomState[index]; // local random state
+  curandStateXORWOW_t lrs;
+  curand_init(randomState, index, 0, &lrs);
   color pixel_color(0, 0, 0);
   #pragma unroll
   for (int sample = 0; sample < (RTOW_SAMPLES_PER_PIXEL); sample++)

@@ -85,8 +85,8 @@ class Camera():
         img_gpu = cp.empty((image_height, image_width, 3), dtype=cp.float32)
         assert img_gpu.flags.c_contiguous
 
-        random_state = cp.random.randint(0, 12345678, (image_height, image_width), dtype=cp.uint64)
-        assert random_state.flags.c_contiguous
+        random_state = cp.random.randint(0, 2**64 - 1, (1,), dtype=cp.uint64)
+        random_state = cp.uint64(random_state.item())
 
         gpu_func = self.module.get_function('render')
         sz_block = 32, 32
