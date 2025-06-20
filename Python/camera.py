@@ -31,10 +31,16 @@ from world import world
 
 class CameraSettings():
     def __init__(self) -> None:
-        self.aspect_ratio = 1.0
-        self.image_width = 100
-        self.samples_per_pixel = 10
-        self.max_depth = 10
+        self.aspect_ratio = 1.0 # Ratio of image width over height
+        self.image_width = 100 # Rendered image width in pixel count
+        self.samples_per_pixel = 10 # Count of random samples for each pixel
+        self.max_depth = 10 # Maximum number of ray bounces into scene
+
+        self.vfov = 90 # Vertical view angle (field of view) in degrees
+        self.lookfrom = (0, 0, 0) # Point camera is looking from
+        self.lookat = (0, 0, -1) # Point camera is looking at
+        self.vup = (0, 1, 0) # Camera-relative "up" direction
+
         self.sz_block = 16, 16
 
 class Camera():
@@ -65,18 +71,29 @@ class Camera():
         module.compile()
         self.module = module
 
-        focal_length = 1.0
-        viewport_height = 2.0
+        lookfrom = np.array(self.settings.lookfrom, dtype=np.float32)
+        lookat = np.array(self.settings.lookat, dtype=np.float32)
+        focal_length = np.linalg.norm(lookfrom - lookat).item()
+        theta = np.deg2rad(self.settings.vfov)
+        h = np.tan(theta/2)
+        viewport_height = 2 * h * focal_length
         viewport_width = viewport_height * (float(image_width)/image_height)
-        camera_center = np.array([0, 0, 0], dtype=np.float32)
+        camera_center = lookfrom
 
-        viewport_u = np.array([viewport_width, 0, 0], dtype=np.float32)
-        viewport_v = np.array([0, -viewport_height, 0], dtype=np.float32)
+        w = lookfrom - lookat
+        w /= np.linalg.norm(w)
+        vup = np.array(self.settings.vup, dtype=np.float32)
+        u = np.cross(vup, w)
+        u /= np.linalg.norm(u)
+        v = np.cross(w, u)
+
+        viewport_u = viewport_width * u
+        viewport_v = -viewport_height * v
 
         pixel_delta_u = viewport_u / image_width
         pixel_delta_v = viewport_v / image_height
 
-        viewport_upper_left = camera_center - np.array([0, 0, focal_length], dtype=np.float32) - viewport_u/2 - viewport_v/2
+        viewport_upper_left = camera_center - (focal_length * w) - viewport_u/2 - viewport_v/2
         pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v)
 
         upload_constant(self.module, camera_center, 'g_cameraCenter')
