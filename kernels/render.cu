@@ -28,6 +28,8 @@ __constant__ vec3 g_cameraCenter;
 __constant__ vec3 g_pixelDeltaU;
 __constant__ vec3 g_pixelDeltaV;
 __constant__ vec3 g_pixel00Loc;
+__constant__ point3 g_defocusDiskU;
+__constant__ point3 g_defocusDiskV;
 
 using color = vec3;
 using point3 = vec3;
@@ -72,14 +74,22 @@ __device__ vec3 sample_square(curandStateXORWOW_t &randomState)
   return vec3(curand_uniform(&randomState) - 0.5f, curand_uniform(&randomState) - 0.5f, 0);
 }
 
+__device__ point3 defocus_disk_sample(curandStateXORWOW_t &randomStat)
+{
+  // Returns a random point in the camera defocus disk.
+  auto p = random_in_unit_disk(randomStat);
+  return g_cameraCenter + (p.x() * g_defocusDiskU) + (p.y() * g_defocusDiskV);
+}
+
 __device__ ray get_ray(int i, int j, curandStateXORWOW_t &randomState)
 {
   // Construct a camera ray originating from the origin and directed at randomly sampled
   // point around the pixel location i, j.
   auto offset = sample_square(randomState);
   auto pixelSample = g_pixel00Loc + ((offset.x() + i) * g_pixelDeltaU) + ((offset.y() + j) * g_pixelDeltaV);
-  auto rayDirection = pixelSample - g_cameraCenter;
-  ray r(g_cameraCenter, rayDirection);
+  auto rayOrigin = ((RTOW_DEFOCUS_ANGLE) <= 0) ? g_cameraCenter : defocus_disk_sample(randomState);
+  auto rayDirection = pixelSample - rayOrigin;
+  ray r(rayOrigin, rayDirection);
 
   return r;
 }

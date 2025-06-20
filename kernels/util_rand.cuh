@@ -63,4 +63,14 @@ __device__ vec3 random_on_hemisphere(curandStateXORWOW_t &randomState, const vec
     return -on_unit_sphere;
 }
 
+__device__ vec3 random_in_unit_disk(curandStateXORWOW_t &randomState)
+{
+  while (true)
+  {
+    auto p = vec3(random_float(-1, 1, randomState), random_float(-1, 1, randomState), 0);
+    if (p.length_squared() < 1)
+      return p;
+  }
+}
+
 #endif // UTIL_RAND_CUH_

@@ -41,6 +41,9 @@ class CameraSettings():
         self.lookat = (0, 0, -1) # Point camera is looking at
         self.vup = (0, 1, 0) # Camera-relative "up" direction
 
+        self.defocus_angle = 0 # Variation angle of rays through each pixel
+        self.focus_dist = 10 # Distance from camera lookfrom point to plane of perfect focus
+
         self.sz_block = 16, 16
 
 class Camera():
@@ -56,6 +59,7 @@ class Camera():
         image_height = self.settings.image_height
         samples_per_pixel = self.settings.samples_per_pixel
         max_depth = self.settings.max_depth
+        defocus_angle = self.settings.defocus_angle
 
         cuda_source = self.cuda_source
         cuda_source = cuda_source.replace('RTOW_FLT_MAX', str(cp.finfo(cp.float32).max) + 'f')
@@ -64,6 +68,7 @@ class Camera():
         cuda_source = cuda_source.replace('RTOW_SAMPLES_PER_PIXEL', str(samples_per_pixel))
         cuda_source = cuda_source.replace('RTOW_PIXEL_SAMPLE_SCALE', str(1.0/samples_per_pixel) + 'f')
         cuda_source = cuda_source.replace('RTOW_MAX_DEPTH', str(max_depth))
+        cuda_source = cuda_source.replace('RTOW_DEFOCUS_ANGLE', str(defocus_angle))
         cuda_source = cuda_source.replace('RTOW_WIDTH', str(image_width))
         cuda_source = cuda_source.replace('RTOW_HEIGHT', str(image_height))
 
@@ -71,12 +76,12 @@ class Camera():
         module.compile()
         self.module = module
 
+        focus_dist = self.settings.focus_dist
         lookfrom = np.array(self.settings.lookfrom, dtype=np.float32)
         lookat = np.array(self.settings.lookat, dtype=np.float32)
-        focal_length = np.linalg.norm(lookfrom - lookat).item()
         theta = np.deg2rad(self.settings.vfov)
         h = np.tan(theta/2)
-        viewport_height = 2 * h * focal_length
+        viewport_height = 2 * h * focus_dist
         viewport_width = viewport_height * (float(image_width)/image_height)
         camera_center = lookfrom
 
@@ -93,13 +98,19 @@ class Camera():
         pixel_delta_u = viewport_u / image_width
         pixel_delta_v = viewport_v / image_height
 
-        viewport_upper_left = camera_center - (focal_length * w) - viewport_u/2 - viewport_v/2
+        viewport_upper_left = camera_center - (focus_dist * w) - viewport_u/2 - viewport_v/2
         pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v)
+
+        defocus_radius = focus_dist * np.tan(np.deg2rad(self.settings.defocus_angle / 2))
+        defocus_disk_u = u * defocus_radius
+        defocus_disk_v = v * defocus_radius
 
         upload_constant(self.module, camera_center, 'g_cameraCenter')
         upload_constant(self.module, pixel_delta_u, 'g_pixelDeltaU')
         upload_constant(self.module, pixel_delta_v, 'g_pixelDeltaV')
         upload_constant(self.module, pixel00_loc, 'g_pixel00Loc')
+        upload_constant(self.module, defocus_disk_u, 'g_defocusDiskU')
+        upload_constant(self.module, defocus_disk_v, 'g_defocusDiskV')
 
     def render(self, world: world) -> None:
         image_width = self.settings.image_width
