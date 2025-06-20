@@ -39,10 +39,12 @@ extern "C" __global__ void createMatrials(unsigned long *materials_ptr)
     materials_ptr[0] = reinterpret_cast<unsigned long>(p);
     p = new lambertian(color(0.1f, 0.2f, 0.5f));
     materials_ptr[1] = reinterpret_cast<unsigned long>(p);
-    p = new metal(color(0.8f, 0.8f, 0.8f), 0.3f);
+    p = new dielectric(1.5f);
     materials_ptr[2] = reinterpret_cast<unsigned long>(p);
-    p = new metal(color(0.8f, 0.6f, 0.2f), 1);
+    p = new dielectric(1.0f / 1.5f);
     materials_ptr[3] = reinterpret_cast<unsigned long>(p);
+    p = new metal(color(0.8f, 0.6f, 0.2f), 1);
+    materials_ptr[4] = reinterpret_cast<unsigned long>(p);
   }
 }
 
@@ -63,8 +65,11 @@ extern "C" __global__ void createSpheres(unsigned long *spheres_ptr, unsigned lo
     ph = new sphere(point3(-1, 0,       -1),    0.5f, pm);
     spheres_ptr[2] = reinterpret_cast<unsigned long>(ph);
     pm = reinterpret_cast<material *>(materials_ptr[3]);
-    ph = new sphere(point3( 1, 0,       -1),    0.5f, pm);
+    ph = new sphere(point3(-1, 0,       -1),    0.4f, pm);
     spheres_ptr[3] = reinterpret_cast<unsigned long>(ph);
+    pm = reinterpret_cast<material *>(materials_ptr[4]);
+    ph = new sphere(point3( 1, 0,       -1),    0.5f, pm);
+    spheres_ptr[4] = reinterpret_cast<unsigned long>(ph);
   }
 }
 
@@ -72,13 +77,14 @@ extern "C" __global__ void createWorld(unsigned long *world_ptr, unsigned long *
 {
   if (threadIdx.x == 0 && blockIdx.x == 0)
   {
-    hittable *hittables[4];
+    hittable *hittables[5];
     hittables[0] = reinterpret_cast<hittable *>(hittables_ptr[0]);
     hittables[1] = reinterpret_cast<hittable *>(hittables_ptr[1]);
     hittables[2] = reinterpret_cast<hittable *>(hittables_ptr[2]);
     hittables[3] = reinterpret_cast<hittable *>(hittables_ptr[3]);
+    hittables[4] = reinterpret_cast<hittable *>(hittables_ptr[4]);
 
-    world_ptr[0] = reinterpret_cast<unsigned long>(new hittable_list(hittables, 4));
+    world_ptr[0] = reinterpret_cast<unsigned long>(new hittable_list(hittables, 5));
   }
 }
 
@@ -89,7 +95,6 @@ extern "C" __global__ void destroyWorld(unsigned long *materials_ptr, unsigned l
     hittable *ph;
     ph = reinterpret_cast<hittable *>(world_ptr[0]);
     delete ph;
-    world_ptr[0] = 0;
 
     ph = reinterpret_cast<hittable *>(hittables_ptr[0]);
     delete ph;
@@ -99,10 +104,8 @@ extern "C" __global__ void destroyWorld(unsigned long *materials_ptr, unsigned l
     delete ph;
     ph = reinterpret_cast<hittable *>(hittables_ptr[3]);
     delete ph;
-    hittables_ptr[0] = 0;
-    hittables_ptr[1] = 0;
-    hittables_ptr[2] = 0;
-    hittables_ptr[3] = 0;
+    ph = reinterpret_cast<hittable *>(hittables_ptr[4]);
+    delete ph;
 
     material *pm = reinterpret_cast<material *>(materials_ptr[0]);
     delete pm;
@@ -112,9 +115,7 @@ extern "C" __global__ void destroyWorld(unsigned long *materials_ptr, unsigned l
     delete pm;
     pm = reinterpret_cast<material *>(materials_ptr[3]);
     delete pm;
-    materials_ptr[0] = 0;
-    materials_ptr[1] = 0;
-    materials_ptr[2] = 0;
-    materials_ptr[3] = 0;
+    pm = reinterpret_cast<material *>(materials_ptr[4]);
+    delete pm;
   }
 }

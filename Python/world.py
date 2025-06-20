@@ -49,8 +49,8 @@ class world():
         if self.is_world_created:
             return
 
-        self.spheres_ptr = cp.zeros((4,), dtype=cp.uint64)
-        self.materials_ptr = cp.zeros((4,), dtype=cp.uint64)
+        self.spheres_ptr = cp.zeros((5,), dtype=cp.uint64)
+        self.materials_ptr = cp.zeros((5,), dtype=cp.uint64)
         self.world_ptr = cp.zeros((1,), dtype=cp.uint64)
 
         sz_block = 1,
@@ -92,6 +92,9 @@ class world():
                   self.world_ptr)
         )
         cp.cuda.runtime.deviceSynchronize()
+        self.materials_ptr[:] = 0
+        self.spheres_ptr[:] = 0
+        self.world_ptr[:] = 0
         self.is_world_created = False
 
     def __del__(self) -> None:
