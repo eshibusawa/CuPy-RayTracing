@@ -43,38 +43,42 @@ class world():
     def __init__(self, module: cp.RawModule) -> None:
         check_pointer_size(module)
         self.module = module
+        self.count = 0
         self.is_world_created = False
 
     def create_world(self) -> None:
         if self.is_world_created:
             return
 
-        self.spheres_ptr = cp.zeros((5,), dtype=cp.uint64)
-        self.materials_ptr = cp.zeros((5,), dtype=cp.uint64)
+        self.max_count = 22 * 22 + 4
+        self.spheres_ptr = cp.zeros((self.max_count,), dtype=cp.uint64)
+        self.materials_ptr = cp.zeros((self.max_count,), dtype=cp.uint64)
         self.world_ptr = cp.zeros((1,), dtype=cp.uint64)
+        count = cp.zeros((1,), dtype=cp.int32)
+
+        random_state = cp.random.randint(0, 2**63 - 1, (3,), dtype=cp.uint64)
 
         sz_block = 1,
         sz_grid = 1,
-        gpu_func = self.module.get_function('createMatrials')
-        gpu_func(
-            block=sz_block, grid=sz_grid,
-            args=(self.materials_ptr)
-        )
-        cp.cuda.runtime.deviceSynchronize()
-
         gpu_func = self.module.get_function('createSpheres')
         gpu_func(
             block=sz_block, grid=sz_grid,
-            args=(self.spheres_ptr,
-                  self.materials_ptr)
+            args=(self.materials_ptr,
+                  self.spheres_ptr,
+                  count,
+                  cp.int32(self.max_count),
+                  random_state)
         )
         cp.cuda.runtime.deviceSynchronize()
+        self.count = int(count.get()[0])
+        assert self.count <= self.max_count
 
         gpu_func = self.module.get_function('createWorld')
         gpu_func(
             block=sz_block, grid=sz_grid,
             args=(self.world_ptr,
-                  self.spheres_ptr)
+                  self.spheres_ptr,
+                  cp.int32(self.count))
         )
         cp.cuda.runtime.deviceSynchronize()
         self.is_world_created = True
@@ -89,7 +93,8 @@ class world():
             block=sz_block, grid=sz_grid,
             args=(self.materials_ptr,
                   self.spheres_ptr,
-                  self.world_ptr)
+                  self.world_ptr,
+                  cp.int32(self.count))
         )
         cp.cuda.runtime.deviceSynchronize()
         self.materials_ptr[:] = 0

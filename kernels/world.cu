@@ -30,92 +30,116 @@ extern "C" __global__ void getPointerSize(int *output)
   }
 }
 
-extern "C" __global__ void createMatrials(unsigned long *materials_ptr)
+extern "C" __global__ void createSpheres(unsigned long *materials_ptr, unsigned long *spheres_ptr, int *count,
+  int maxCount, unsigned long *randomState)
 {
   if (threadIdx.x == 0 && blockIdx.x == 0)
   {
-    material *p;
-    p = new lambertian(color(0.8f, 0.8f, 0));
-    materials_ptr[0] = reinterpret_cast<unsigned long>(p);
-    p = new lambertian(color(0.1f, 0.2f, 0.5f));
-    materials_ptr[1] = reinterpret_cast<unsigned long>(p);
-    p = new dielectric(1.5f);
-    materials_ptr[2] = reinterpret_cast<unsigned long>(p);
-    p = new dielectric(1.0f / 1.5f);
-    materials_ptr[3] = reinterpret_cast<unsigned long>(p);
-    p = new metal(color(0.8f, 0.6f, 0.2f), 1);
-    materials_ptr[4] = reinterpret_cast<unsigned long>(p);
-  }
-}
-
-extern "C" __global__ void createSpheres(unsigned long *spheres_ptr, unsigned long *materials_ptr)
-{
-  if (threadIdx.x == 0 && blockIdx.x == 0)
-  {
+    int offset = 0;
     material *pm;
     hittable *ph;
 
-    pm = reinterpret_cast<material *>(materials_ptr[0]);
-    ph = new sphere(point3( 0, -100.5f, -1),    100,  pm);
-    spheres_ptr[0] = reinterpret_cast<unsigned long>(ph);
-    pm = reinterpret_cast<material *>(materials_ptr[1]);
-    ph = new sphere(point3( 0, 0,       -1.2f), 0.5f, pm);
-    spheres_ptr[1] = reinterpret_cast<unsigned long>(ph);
-    pm = reinterpret_cast<material *>(materials_ptr[2]);
-    ph = new sphere(point3(-1, 0,       -1),    0.5f, pm);
-    spheres_ptr[2] = reinterpret_cast<unsigned long>(ph);
-    pm = reinterpret_cast<material *>(materials_ptr[3]);
-    ph = new sphere(point3(-1, 0,       -1),    0.4f, pm);
-    spheres_ptr[3] = reinterpret_cast<unsigned long>(ph);
-    pm = reinterpret_cast<material *>(materials_ptr[4]);
-    ph = new sphere(point3( 1, 0,       -1),    0.5f, pm);
-    spheres_ptr[4] = reinterpret_cast<unsigned long>(ph);
+    pm = new lambertian(color(0.5f, 0.5f, 0.5f));
+    materials_ptr[offset] = reinterpret_cast<unsigned long>(pm);
+    ph = new sphere(point3(0,-1000,0), 1000, pm);
+    spheres_ptr[offset] = reinterpret_cast<unsigned long>(ph);
+    offset++;
+
+    pm = new dielectric(1.5f);
+    materials_ptr[offset] = reinterpret_cast<unsigned long>(pm);
+    ph = new sphere(point3(0, 1, 0), 1.0, pm);
+    spheres_ptr[offset] = reinterpret_cast<unsigned long>(ph);
+    offset++;
+
+    pm = new lambertian(color(0.4f, 0.2f, 0.1f));
+    materials_ptr[offset] = reinterpret_cast<unsigned long>(pm);
+    ph = new sphere(point3(-4, 1, 0), 1.0, pm);
+    spheres_ptr[offset] = reinterpret_cast<unsigned long>(ph);
+    offset++;
+
+    pm = new metal(color(0.7f, 0.6f, 0.5f), 0);
+    materials_ptr[offset] = reinterpret_cast<unsigned long>(pm);
+    ph = new sphere(point3(4, 1, 0), 1.0, pm);
+    spheres_ptr[offset] = reinterpret_cast<unsigned long>(ph);
+    offset++;
+
+    curandStateXORWOW_t lrs;
+    curand_init(randomState[0], randomState[1], randomState[2], &lrs);
+    for (int a = -11; a < 11; a++)
+    {
+      for (int b = -11; b < 11; b++)
+      {
+        auto choose_mat = curand_uniform(&lrs);
+        point3 center(a + 0.9*curand_uniform(&lrs), 0.2f, b + 0.9f*curand_uniform(&lrs));
+
+        if ((center - point3(4, 0.2f, 0)).length() > 0.9f)
+        {
+          ph = nullptr;
+          pm = nullptr;
+          if (choose_mat < 0.8f)
+          {
+            // diffuse
+            auto albedo = random(lrs) * random(lrs);
+            pm = new lambertian(albedo);
+          }
+          else if (choose_mat < 0.95f)
+          {
+            // metal
+            auto albedo = random(0.5f, 1.f, lrs);
+            auto fuzz = random_float(0, 0.5f, lrs);
+            pm = new metal(albedo, fuzz);
+          }
+          else
+          {
+            // glass
+            pm = new dielectric(1.5f);
+          }
+
+          if (offset >= maxCount)
+          {
+            continue;
+          }
+          materials_ptr[offset] = reinterpret_cast<unsigned long>(pm);
+          ph = new sphere(center, 0.2f, pm);
+          spheres_ptr[offset] = reinterpret_cast<unsigned long>(ph);
+          offset++;
+        }
+      }
+    }
+    *count = offset;
   }
 }
 
-extern "C" __global__ void createWorld(unsigned long *world_ptr, unsigned long *hittables_ptr)
+extern "C" __global__ void createWorld(unsigned long *world_ptr, unsigned long *hittables_ptr, int count)
 {
   if (threadIdx.x == 0 && blockIdx.x == 0)
   {
-    hittable *hittables[5];
-    hittables[0] = reinterpret_cast<hittable *>(hittables_ptr[0]);
-    hittables[1] = reinterpret_cast<hittable *>(hittables_ptr[1]);
-    hittables[2] = reinterpret_cast<hittable *>(hittables_ptr[2]);
-    hittables[3] = reinterpret_cast<hittable *>(hittables_ptr[3]);
-    hittables[4] = reinterpret_cast<hittable *>(hittables_ptr[4]);
+    hittable **hittables = new hittable* [count];
+    for (int k = 0; k < count; k++)
+    {
+      hittables[k] = reinterpret_cast<hittable *>(hittables_ptr[k]);
+    }
 
-    world_ptr[0] = reinterpret_cast<unsigned long>(new hittable_list(hittables, 5));
+    world_ptr[0] = reinterpret_cast<unsigned long>(new hittable_list(hittables, count));
+    delete [] hittables;
   }
 }
 
-extern "C" __global__ void destroyWorld(unsigned long *materials_ptr, unsigned long *hittables_ptr, unsigned long *world_ptr)
+extern "C" __global__ void destroyWorld(unsigned long *materials_ptr, unsigned long *hittables_ptr, unsigned long *world_ptr, int count)
 {
   if (threadIdx.x == 0 && blockIdx.x == 0)
   {
-    hittable *ph;
+    hittable *ph = nullptr;
+    material *pm = nullptr;
     ph = reinterpret_cast<hittable *>(world_ptr[0]);
     delete ph;
 
-    ph = reinterpret_cast<hittable *>(hittables_ptr[0]);
-    delete ph;
-    ph = reinterpret_cast<hittable *>(hittables_ptr[1]);
-    delete ph;
-    ph = reinterpret_cast<hittable *>(hittables_ptr[2]);
-    delete ph;
-    ph = reinterpret_cast<hittable *>(hittables_ptr[3]);
-    delete ph;
-    ph = reinterpret_cast<hittable *>(hittables_ptr[4]);
-    delete ph;
-
-    material *pm = reinterpret_cast<material *>(materials_ptr[0]);
-    delete pm;
-    pm = reinterpret_cast<material *>(materials_ptr[1]);
-    delete pm;
-    pm = reinterpret_cast<material *>(materials_ptr[2]);
-    delete pm;
-    pm = reinterpret_cast<material *>(materials_ptr[3]);
-    delete pm;
-    pm = reinterpret_cast<material *>(materials_ptr[4]);
-    delete pm;
+    for (int k = 0; k < count; k++)
+    {
+      ph = reinterpret_cast<hittable *>(hittables_ptr[k]);
+      delete ph;
+      pm = reinterpret_cast<material *>(materials_ptr[k]);
+      delete pm;
+    }
   }
 }
