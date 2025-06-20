@@ -24,45 +24,76 @@
 
 import cupy as cp
 
+def check_pointer_size(module: cp.RawModule) -> None:
+    sz = cp.empty((1), dtype=cp.int32)
+    gpu_func = module.get_function('getPointerSize')
+    sz_block = 1,
+    sz_grid = 1,
+    gpu_func(
+        block=sz_block, grid=sz_grid,
+        args=(sz)
+    )
+    cp.cuda.runtime.deviceSynchronize()
+    sz = sz.get()
+    sz = int(sz[0])
+
+    assert sz == 8 # pointer size on GPU is assumed to 64bit
+
 class world():
     def __init__(self, module: cp.RawModule) -> None:
+        check_pointer_size(module)
         self.module = module
-        sz = cp.empty((1), dtype=cp.int32)
-        gpu_func = self.module.get_function('getPointerSize')
-        sz_block = 1,
-        sz_grid = 1,
-        gpu_func(
-            block=sz_block, grid=sz_grid,
-            args=(sz)
-        )
-        cp.cuda.runtime.deviceSynchronize()
-        sz = sz.get()
-        self.sz = int(sz[0])
+        self.is_world_created = False
 
-        assert self.sz == 8 # pointer size on GPU is assumed to 64bit
-        self.objects_ptr = cp.zeros((4,), dtype=cp.uint64)
+    def create_world(self) -> None:
+        if self.is_world_created:
+            return
+
+        self.spheres_ptr = cp.zeros((4,), dtype=cp.uint64)
         self.materials_ptr = cp.zeros((4,), dtype=cp.uint64)
         self.world_ptr = cp.zeros((1,), dtype=cp.uint64)
 
-        gpu_func = self.module.get_function('createWorld')
         sz_block = 1,
         sz_grid = 1,
+        gpu_func = self.module.get_function('createMatrials')
         gpu_func(
             block=sz_block, grid=sz_grid,
-            args=(self.objects_ptr,
-                  self.materials_ptr,
-                  self.world_ptr)
+            args=(self.materials_ptr)
         )
         cp.cuda.runtime.deviceSynchronize()
 
-    def __del__(self) -> None:
-        gpu_func = self.module.get_function('destroyWorld')
-        sz_block = 1,
-        sz_grid = 1,
+        gpu_func = self.module.get_function('createSpheres')
         gpu_func(
             block=sz_block, grid=sz_grid,
-            args=(self.objects_ptr,
-                  self.materials_ptr,
+            args=(self.spheres_ptr,
+                  self.materials_ptr)
+        )
+        cp.cuda.runtime.deviceSynchronize()
+
+        gpu_func = self.module.get_function('createWorld')
+        gpu_func(
+            block=sz_block, grid=sz_grid,
+            args=(self.world_ptr,
+                  self.spheres_ptr)
+        )
+        cp.cuda.runtime.deviceSynchronize()
+        self.is_world_created = True
+
+    def destroy_world(self) -> None:
+        if not self.is_world_created:
+            return
+        sz_block = 1,
+        sz_grid = 1,
+        gpu_func = self.module.get_function('destroyWorld')
+        gpu_func(
+            block=sz_block, grid=sz_grid,
+            args=(self.materials_ptr,
+                  self.spheres_ptr,
                   self.world_ptr)
         )
         cp.cuda.runtime.deviceSynchronize()
+        self.is_world_created = False
+
+    def __del__(self) -> None:
+        if self.is_world_created:
+            self.destroy_world()
