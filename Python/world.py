@@ -45,14 +45,18 @@ class world():
         self.module = module
         self.count = 0
         self.is_world_created = False
+    def __copy__(self):
+        raise TypeError("copying of this object is not allowed")
+
+    def __deepcopy__(self, memo):
+        raise TypeError("deep copying of this object is not allowed")
 
     def create_world(self) -> None:
         if self.is_world_created:
             return
 
         self.max_count = 22 * 22 + 4
-        self.spheres_ptr = cp.zeros((self.max_count,), dtype=cp.uint64)
-        self.materials_ptr = cp.zeros((self.max_count,), dtype=cp.uint64)
+        spheres_ptr = cp.zeros((self.max_count,), dtype=cp.uint64)
         self.world_ptr = cp.zeros((1,), dtype=cp.uint64)
         count = cp.zeros((1,), dtype=cp.int32)
 
@@ -63,8 +67,7 @@ class world():
         gpu_func = self.module.get_function('createSpheres')
         gpu_func(
             block=sz_block, grid=sz_grid,
-            args=(self.materials_ptr,
-                  self.spheres_ptr,
+            args=(spheres_ptr,
                   count,
                   cp.int32(self.max_count),
                   random_state)
@@ -77,7 +80,7 @@ class world():
         gpu_func(
             block=sz_block, grid=sz_grid,
             args=(self.world_ptr,
-                  self.spheres_ptr,
+                  spheres_ptr,
                   cp.int32(self.count))
         )
         cp.cuda.runtime.deviceSynchronize()
@@ -91,14 +94,10 @@ class world():
         gpu_func = self.module.get_function('destroyWorld')
         gpu_func(
             block=sz_block, grid=sz_grid,
-            args=(self.materials_ptr,
-                  self.spheres_ptr,
-                  self.world_ptr,
+            args=(self.world_ptr,
                   cp.int32(self.count))
         )
         cp.cuda.runtime.deviceSynchronize()
-        self.materials_ptr[:] = 0
-        self.spheres_ptr[:] = 0
         self.world_ptr[:] = 0
         self.is_world_created = False
 

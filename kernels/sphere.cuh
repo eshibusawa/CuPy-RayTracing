@@ -35,6 +35,12 @@ public:
   {
   }
 
+  __device__ ~sphere() override
+  {
+    delete mat;
+    mat = nullptr;
+  }
+
   __device__ bool hit(const ray& r, interval ray_t, hit_record& rec) const override
   {
       vec3 oc = center - r.origin();

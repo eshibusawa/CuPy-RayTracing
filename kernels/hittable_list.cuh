@@ -43,6 +43,11 @@ public:
   }
   __device__ virtual ~hittable_list()
   {
+    for (int i = 0; i < object_count; i++)
+    {
+      delete objects[i];
+      objects[i] = nullptr;
+    }
     delete [] objects;
   }
   __device__ bool hit(const ray& r, interval ray_t, hit_record& rec) const

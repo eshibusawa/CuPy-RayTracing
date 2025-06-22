@@ -30,7 +30,7 @@ extern "C" __global__ void getPointerSize(int *output)
   }
 }
 
-extern "C" __global__ void createSpheres(unsigned long *materials_ptr, unsigned long *spheres_ptr, int *count,
+extern "C" __global__ void createSpheres(unsigned long *spheres_ptr, int *count,
   int maxCount, unsigned long *randomState)
 {
   if (threadIdx.x == 0 && blockIdx.x == 0)
@@ -40,25 +40,21 @@ extern "C" __global__ void createSpheres(unsigned long *materials_ptr, unsigned 
     hittable *ph;
 
     pm = new lambertian(color(0.5f, 0.5f, 0.5f));
-    materials_ptr[offset] = reinterpret_cast<unsigned long>(pm);
     ph = new sphere(point3(0,-1000,0), 1000, pm);
     spheres_ptr[offset] = reinterpret_cast<unsigned long>(ph);
     offset++;
 
     pm = new dielectric(1.5f);
-    materials_ptr[offset] = reinterpret_cast<unsigned long>(pm);
     ph = new sphere(point3(0, 1, 0), 1.0, pm);
     spheres_ptr[offset] = reinterpret_cast<unsigned long>(ph);
     offset++;
 
     pm = new lambertian(color(0.4f, 0.2f, 0.1f));
-    materials_ptr[offset] = reinterpret_cast<unsigned long>(pm);
     ph = new sphere(point3(-4, 1, 0), 1.0, pm);
     spheres_ptr[offset] = reinterpret_cast<unsigned long>(ph);
     offset++;
 
     pm = new metal(color(0.7f, 0.6f, 0.5f), 0);
-    materials_ptr[offset] = reinterpret_cast<unsigned long>(pm);
     ph = new sphere(point3(4, 1, 0), 1.0, pm);
     spheres_ptr[offset] = reinterpret_cast<unsigned long>(ph);
     offset++;
@@ -99,7 +95,6 @@ extern "C" __global__ void createSpheres(unsigned long *materials_ptr, unsigned 
           {
             continue;
           }
-          materials_ptr[offset] = reinterpret_cast<unsigned long>(pm);
           ph = new sphere(center, 0.2f, pm);
           spheres_ptr[offset] = reinterpret_cast<unsigned long>(ph);
           offset++;
@@ -125,21 +120,12 @@ extern "C" __global__ void createWorld(unsigned long *world_ptr, unsigned long *
   }
 }
 
-extern "C" __global__ void destroyWorld(unsigned long *materials_ptr, unsigned long *hittables_ptr, unsigned long *world_ptr, int count)
+extern "C" __global__ void destroyWorld(unsigned long *world_ptr)
 {
   if (threadIdx.x == 0 && blockIdx.x == 0)
   {
     hittable *ph = nullptr;
-    material *pm = nullptr;
     ph = reinterpret_cast<hittable *>(world_ptr[0]);
     delete ph;
-
-    for (int k = 0; k < count; k++)
-    {
-      ph = reinterpret_cast<hittable *>(hittables_ptr[k]);
-      delete ph;
-      pm = reinterpret_cast<material *>(materials_ptr[k]);
-      delete pm;
-    }
   }
 }
