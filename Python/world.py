@@ -94,8 +94,7 @@ class world():
         gpu_func = self.module.get_function('destroyWorld')
         gpu_func(
             block=sz_block, grid=sz_grid,
-            args=(self.world_ptr,
-                  cp.int32(self.count))
+            args=(self.world_ptr)
         )
         cp.cuda.runtime.deviceSynchronize()
         self.world_ptr[:] = 0
