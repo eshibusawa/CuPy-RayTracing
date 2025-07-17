@@ -35,7 +35,7 @@ public:
   {
   }
 
-  __device__ ~sphere() override
+  __device__ virtual ~sphere() override
   {
     delete mat;
     mat = nullptr;

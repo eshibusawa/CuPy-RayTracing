@@ -2,7 +2,7 @@ name: CuPy-RayTracing
 channels:
   - conda-forge
 dependencies:
-  - cudatoolkit=11.8.0
+  - cuda-version=12.5
   - cupy
   - ipython
   - jupyter
