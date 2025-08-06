@@ -280,23 +280,36 @@ git checkout -b chapter14 origin/chapter14
 ```
 
 ## Performance Analysis
-This section presents a comparative analysis of the ray tracing application's execution time on a GPU (NVIDIA GeForce RTX 4070 Ti) versus a CPU (Intel Core i9-11900 @ 2.50GHz, utilizing a single-threaded reference implementation). The benchmark involved rendering a 1200 x 675 pixel image, with performance evaluated based on varying `samples_per_pixel` and `max_depth` parameters.
+This section presents a comparative analysis of the execution time for a ray tracing application on a GPU (NVIDIA GeForce RTX 4070 Ti) versus a CPU (Intel Core i9-11900 @ 2.50GHz, utilizing a single-threaded reference implementation).
+The benchmark involved rendering a 1200 x 675 pixel image, with performance evaluated based on varying `samples_per_pixel` and `max_depth` parameters.
 
-The GPU’s overwhelming performance advantage for ray tracing tasks is unequivocally demonstrated by the data.
+The data unequivocally demonstrates the GPU’s overwhelming performance advantage for ray tracing tasks.
 Across all tested configurations, the GPU completed rendering significantly faster than the CPU.
-While even at `samples_per_pixel=20` and `max_depth=10`, the GPU took approximately 1,982 ms, whereas the CPU required about 58,691 ms, making the GPU nearly 30 times faster, this drastic difference becomes even more pronounced and critical at higher quality settings.
-For instance, when rendering with `samples_per_pixel=500` and `max_depth=50`—a configuration essential for achieving high visual fidelity in diffuse scenes—the GPU completed the task in approximately 84,386 ms (about 84 seconds), whereas the CPU struggled, requiring approximately 1,488,910 ms (nearly 25 minutes).
-This staggering difference of over 17 times faster highlights the GPU's superior capability in handling highly parallelizable computations inherent in ray tracing, particularly for demanding, high-quality renders that are simply impractical on a single-threaded CPU implementation within a reasonable timeframe.
+Even at `samples_per_pixel = 20` and `max_depth = 10`, the GPU took approximately 1,982 ms, whereas the CPU required about 58,691 ms, making the GPU nearly 30 times faster.
+This drastic difference becomes even more pronounced and critical at higher quality settings.
+For instance, when rendering with `samples_per_pixel = 500` and `max_depth = 50`—a configuration essential for achieving high visual fidelity in diffuse scenes—the GPU completed the task in approximately 84,386 ms (about 84 seconds), whereas the CPU struggled, requiring approximately 1,488,910 ms (nearly 25 minutes).
+This staggering difference, with the GPU performing over 17 times faster, highlights its superior capability in handling highly parallelizable computations inherent in ray tracing, particularly for demanding, high-quality renders that are simply impractical on a single-threaded CPU implementation within a reasonable timeframe.
 
-Crucially, `samples_per_pixel` also significantly affects image quality, particularly for Lambertian (diffuse) surfaces. In implementations like the one described in "Ray Tracing in One Weekend," each ray hitting a Lambertian surface randomly reflects a single new ray. To achieve high-quality rendering of these materials, it's essential to generate multiple rays per pixel. Increasing `samples_per_pixel` directly achieves this by averaging the contributions of numerous randomly scattered rays, effectively reducing noise and producing a smoother, more accurate representation of how light interacts with such surfaces. While `samples_per_pixel` also contributes to anti-aliasing by sampling multiple points within a pixel, its impact on the visual fidelity of Lambertian surfaces is particularly prominent and immediately noticeable.
-This directly impacts the visual quality, especially in reducing render noise.
+Crucially, `samples_per_pixel` also significantly affects image quality, particularly for Lambertian (diffuse) surfaces.
+In implementations like the one described in "Ray Tracing in One Weekend," each ray hitting a Lambertian surface randomly reflects a single new ray.
+To achieve high-quality rendering of these materials, it's essential to generate multiple rays per pixel.
+Increasing `samples_per_pixel` directly achieves this by averaging the contributions of numerous randomly scattered rays, effectively reducing noise and producing a smoother, more accurate representation of how light interacts with such surfaces.
+While `samples_per_pixel` also contributes to anti-aliasing by sampling multiple points within a pixel, its impact on the visual fidelity of Lambertian surfaces is particularly prominent and immediately noticeable, directly influencing the reduction of render noise.
 For a visual demonstration of how `samples_per_pixel` affects image quality, refer to Fig. 16.
 
-GPU performance characteristics reveal strong linear scalability with respect to `samples_per_pixel`. As `samples_per_pixel` increases, the execution time grows almost proportionally, indicating the GPU's efficiency in managing and processing a large number of concurrent calculations. A similar, though less pronounced, linear trend is also observed for `max_depth` within each `samples_per_pixel` group. This robust scalability means that for more complex scenes or higher-quality renders, the GPU's performance advantage becomes even more pronounced.
+GPU performance characteristics reveal strong linear scalability with respect to `samples_per_pixel`.
+As `samples_per_pixel` increases, the execution time grows almost proportionally, indicating the GPU's efficiency in managing and processing a large number of concurrent calculations.
+A similar, though less pronounced, linear trend is also observed for `max_depth` within each `samples_per_pixel` group.
+This robust scalability means that for more complex scenes or higher-quality renders, the GPU's performance advantage becomes even more pronounced.
 
-In contrast, CPU performance characteristics demonstrate the limitations of a single-threaded approach. The impact of `max_depth` on CPU execution time is remarkably limited, often showing only marginal increases or even negligible changes, particularly at lower `samples_per_pixel` values. This suggests that for the CPU, bottlenecks may lie elsewhere, such as initial ray setup, scene traversal, or memory access, rather than solely the depth of ray exploration. While `samples_per_pixel` still significantly influences CPU execution time, the scaling is far less efficient than on the GPU, underscoring the inherent disadvantages of single-threaded processing for intrinsically parallel workloads like ray tracing.
+In contrast, CPU performance characteristics demonstrate the limitations of a single-threaded approach.
+The impact of `max_depth` on CPU execution time is remarkably limited, often showing only marginal increases or even negligible changes, particularly at lower `samples_per_pixel` values. This suggests that for the CPU, bottlenecks may lie elsewhere, such as initial ray setup, scene traversal, or memory access, rather than solely the depth of ray exploration.
+While `samples_per_pixel` still significantly influences CPU execution time, the scaling is far less efficient than on the GPU, underscoring the inherent disadvantages of single-threaded processing for intrinsically parallel workloads like ray tracing.
 
-To provide a clear and comprehensive understanding of these performance differences, the data has been visualized through three distinct graphs. Fig. 13, a horizontal bar chart, illustrates the CPU's execution time across varying `samples_per_pixel` and `max_depth` combinations, highlighting its scaling behavior and the relatively minor impact of `max_depth`. Similarly, Fig. 14 presents the GPU's execution times, showcasing its superior speed and efficient scaling with both parameters. Finally, Fig. 15 explicitly visualizes the performance ratio (CPU execution time / GPU execution time), quantifying the GPU's significant speedup factor over the CPU for each parameter set and offering a direct and impactful representation of its advantage in ray tracing.
+To provide a clear and comprehensive understanding of these performance differences, the data has been visualized through three distinct graphs.
+Fig. 13, a horizontal bar chart, illustrates the CPU's execution time across varying `samples_per_pixel` and `max_depth` combinations, highlighting its scaling behavior and the relatively minor impact of `max_depth`.
+Similarly, Fig. 14 presents the GPU's execution times, showcasing its superior speed and efficient scaling with both parameters.
+Finally, Fig. 15 explicitly visualizes the performance ratio (CPU execution time / GPU execution time), quantifying the GPU's significant speedup factor over the CPU for each parameter set and offering a direct and impactful representation of its advantage in ray tracing.
 
 <figure style="padding: 15px; display: inline-block;">
   <img src="images/cpu_spp_vs_md.svg" width="800px" alt="CPU ray tracing performance, showing execution time in seconds versus samples per pixel and max depth.">
@@ -346,6 +359,19 @@ The use of polymorphism, while powerful in C++, is generally best avoided when d
 Despite these complexities, this repository is published to demonstrate the exceptional flexibility and power of CuPy's RawModule.
 While the current memory management approach is highly experimental and carries inherent risks, it highlights how CuPy can be leveraged to address highly specialized and performance-critical requirements in GPU programming.
 This serves as a valuable case study for addressing unique challenges with CuPy's powerful features.
+
+For readers interested in a more robust and safer approach to GPU memory management with CuPy's RawModule, a parallel implementation using Plain Old Data (POD) structures is available in a separate branch.
+This approach completely avoids explicit new and delete calls within the CUDA kernels, relying instead on CuPy to manage all memory allocations.
+
+The implementation in this branch, which can be checked out using the following command, addresses the memory management risks highlighted above.
+```sh
+git checkout -b chapter14-pod origin/chapter14-pod
+```
+This POD-based design is a clear example of how to implement a more maintainable and reliable ray tracer with CuPy's RawModule.
+It is important to note that even with a POD-based approach, rigorous unit testing for data alignment between the CPU and GPU is still crucial to ensure data integrity and prevent subtle bugs.
+
+This robust implementation also shows that while direct C++ polymorphism is not used for memory management, the full power of CUDA C++ is still at one's disposal.
+Features like `__device__` function overloading and the use of non-polymorphic C++ classes within the kernels remain fully viable for organizing and executing GPU code.
 
 ---
 ## Acknowledgement

@@ -28,7 +28,7 @@ import numpy as np
 from PIL import Image as PILImage
 from IPython.display import Image, display
 
-def write_and_display(img: np.array) -> None:
+def write_and_display(img: np.ndarray) -> None:
     pil_img = PILImage.fromarray(img)
     img_byte_arr = io.BytesIO()
     pil_img.save(img_byte_arr, format='PNG')

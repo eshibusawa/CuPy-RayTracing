@@ -25,7 +25,7 @@
 import numpy as np
 import cupy as cp
 
-def upload_constant(module: cp.RawModule, arr: np.array, key: str, dtype: type = cp.float32) -> None:
+def upload_constant(module: cp.RawModule, arr: np.ndarray, key: str, dtype: type = cp.float32) -> None:
     arr_ptr = module.get_global(key)
     arr_gpu = cp.ndarray(arr.shape, dtype, arr_ptr)
     arr_gpu[:] = cp.array(arr, dtype=dtype)

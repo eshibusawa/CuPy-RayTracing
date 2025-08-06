@@ -112,7 +112,7 @@ class Camera():
         upload_constant(self.module, defocus_disk_u, 'g_defocusDiskU')
         upload_constant(self.module, defocus_disk_v, 'g_defocusDiskV')
 
-    def render(self, world: world) -> None:
+    def render(self, world: world) -> cp.ndarray:
         image_width = self.settings.image_width
         image_height = self.settings.image_height
 
@@ -132,5 +132,6 @@ class Camera():
                 random_state)
         )
         cp.cuda.runtime.deviceSynchronize()
+        img_gpu = cp.sqrt(img_gpu)
 
         return img_gpu
