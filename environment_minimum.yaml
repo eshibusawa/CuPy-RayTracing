@@ -11,4 +11,5 @@ dependencies:
   - nose
   - pip
   - python=3.10.*
+  - pytest
 prefix: /path/to/your/envs/CuPy-RayTracing

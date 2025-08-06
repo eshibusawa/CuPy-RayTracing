@@ -22,34 +22,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef HITTABLE_LIST_CUH_
-#define HITTABLE_LIST_CUH_
+#ifndef TYPE_AND_INDEX_CUH_
+#define TYPE_AND_INDEX_CUH_
 
 #pragma pack(push, 4)
-struct hittable_list
+struct type_and_index
 {
-  type_and_index *hittable_ti;
-  int object_count;
+  long type;
+  long index;
 };
 #pragma pack(pop)
 
-bool hit(const hittable_list *p, ray& r, interval ray_t, hit_record& rec)
-{
-  hit_record temp_rec;
-  bool hit_anything = false;
-  auto closest_so_far = ray_t.max;
-
-  for (int i = 0; i < p->object_count; i++)
-  {
-    if (hit(&(p->hittable_ti[i]), r, interval(ray_t.min, closest_so_far), temp_rec))
-    {
-      hit_anything = true;
-      closest_so_far = temp_rec.t;
-      rec = temp_rec;
-    }
-  }
-
-  return hit_anything;
-}
-
-#endif // HITTABLE_LIST_CUH_
+#endif // TYPE_AND_INDEX_CUH_

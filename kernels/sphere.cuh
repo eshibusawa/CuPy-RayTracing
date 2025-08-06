@@ -22,63 +22,52 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef SHPERE_CUH_
-#define SHPERE_CUH_
+#ifndef SPHERE_CUH_
+#define SPHERE_CUH_
 
-using color = vec3;
 using point3 = vec3;
 
-class sphere : public hittable
+#pragma pack(push, 4)
+struct sphere
 {
-public:
-  __device__ sphere(const point3& center, float radius, material *mat) : center(center), radius(fmaxf(0, radius)), mat(mat)
-  {
-  }
-
-  __device__ virtual ~sphere() override
-  {
-    delete mat;
-    mat = nullptr;
-  }
-
-  __device__ bool hit(const ray& r, interval ray_t, hit_record& rec) const override
-  {
-      vec3 oc = center - r.origin();
-      auto a = r.direction().length_squared();
-      auto h = dot(r.direction(), oc);
-      auto c = oc.length_squared() - radius*radius;
-
-      auto discriminant = h*h - a*c;
-      if (discriminant < 0)
-      {
-        return false;
-      }
-
-      auto sqrtd = sqrtf(discriminant);
-
-      auto root = (h - sqrtd) / a;
-      if (!ray_t.surrounds(root))
-      {
-        root = (h + sqrtd) / a;
-        if (!ray_t.surrounds(root))
-        {
-          return false;
-        }
-      }
-
-      rec.t = root;
-      rec.p = r.at(rec.t);
-      vec3 outward_normal = (rec.p - center) / radius;
-      rec.set_face_normal(r, outward_normal);
-      rec.mat = mat;
-
-      return true;
-  }
-
-private:
   point3 center;
   float radius;
-  material *mat;
+  type_and_index material;
 };
+#pragma pack(pop)
 
-#endif // SHPERE_CUH_
+__device__ bool hit(const sphere *p,  ray& r, interval ray_t, hit_record& rec)
+{
+  vec3 oc = p->center - r.origin();
+  auto a = r.direction().length_squared();
+  auto h = dot(r.direction(), oc);
+  auto c = oc.length_squared() - p->radius * p->radius;
+
+  auto discriminant = h*h - a*c;
+  if (discriminant < 0)
+  {
+    return false;
+  }
+
+  auto sqrtd = sqrtf(discriminant);
+
+  auto root = (h - sqrtd) / a;
+  if (!ray_t.surrounds(root))
+  {
+    root = (h + sqrtd) / a;
+    if (!ray_t.surrounds(root))
+    {
+      return false;
+    }
+  }
+
+  rec.t = root;
+  rec.p = r.at(rec.t);
+  vec3 outward_normal = (rec.p - p->center) / p->radius;
+  rec.set_face_normal(r, outward_normal);
+  rec.material_ti = p->material;
+
+  return true;
+}
+
+#endif // SPHERE_CUH_

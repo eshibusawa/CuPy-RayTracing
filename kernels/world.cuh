@@ -22,34 +22,26 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef HITTABLE_LIST_CUH_
-#define HITTABLE_LIST_CUH_
+#ifndef WORLD_CUH_
+#define WORLD_CUH_
+
+struct type_and_index;
+struct hittable_list;
+struct sphere;
+struct lambertian;
+struct metal;
+struct dielectric;
 
 #pragma pack(push, 4)
-struct hittable_list
+struct world
 {
+  hittable_list *hittable_lists;
   type_and_index *hittable_ti;
-  int object_count;
+  sphere *spheres;
+  lambertian *lambertians;
+  metal *metals;
+  dielectric *dielectrics;
 };
 #pragma pack(pop)
 
-bool hit(const hittable_list *p, ray& r, interval ray_t, hit_record& rec)
-{
-  hit_record temp_rec;
-  bool hit_anything = false;
-  auto closest_so_far = ray_t.max;
-
-  for (int i = 0; i < p->object_count; i++)
-  {
-    if (hit(&(p->hittable_ti[i]), r, interval(ray_t.min, closest_so_far), temp_rec))
-    {
-      hit_anything = true;
-      closest_so_far = temp_rec.t;
-      rec = temp_rec;
-    }
-  }
-
-  return hit_anything;
-}
-
-#endif // HITTABLE_LIST_CUH_
+#endif // WORLD_CUH_

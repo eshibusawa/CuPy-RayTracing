@@ -27,7 +27,6 @@ import numpy as np
 import cupy as cp
 
 from util_cuda import upload_constant
-from world import world
 
 class CameraSettings():
     def __init__(self) -> None:
@@ -112,7 +111,7 @@ class Camera():
         upload_constant(self.module, defocus_disk_u, 'g_defocusDiskU')
         upload_constant(self.module, defocus_disk_v, 'g_defocusDiskV')
 
-    def render(self, world: world) -> cp.ndarray:
+    def render(self) -> cp.ndarray:
         image_width = self.settings.image_width
         image_height = self.settings.image_height
 
@@ -128,7 +127,6 @@ class Camera():
         gpu_func(
         block=sz_block, grid=sz_grid,
         args=(img_gpu,
-                world.world_ptr,
                 random_state)
         )
         cp.cuda.runtime.deviceSynchronize()

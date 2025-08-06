@@ -22,34 +22,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef HITTABLE_LIST_CUH_
-#define HITTABLE_LIST_CUH_
+#ifndef DISPATCHER_CUH_
+#define DISPATCHER_CUH_
 
-#pragma pack(push, 4)
-struct hittable_list
-{
-  type_and_index *hittable_ti;
-  int object_count;
-};
-#pragma pack(pop)
+__device__ bool hit(const type_and_index *p,  ray& r, interval ray_t, hit_record& rec);
+__device__ bool scatter(const type_and_index *p, const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandStateXORWOW_t &randomState);
 
-bool hit(const hittable_list *p, ray& r, interval ray_t, hit_record& rec)
-{
-  hit_record temp_rec;
-  bool hit_anything = false;
-  auto closest_so_far = ray_t.max;
-
-  for (int i = 0; i < p->object_count; i++)
-  {
-    if (hit(&(p->hittable_ti[i]), r, interval(ray_t.min, closest_so_far), temp_rec))
-    {
-      hit_anything = true;
-      closest_so_far = temp_rec.t;
-      rec = temp_rec;
-    }
-  }
-
-  return hit_anything;
-}
-
-#endif // HITTABLE_LIST_CUH_
+#endif // DISPATCHER_CUH_

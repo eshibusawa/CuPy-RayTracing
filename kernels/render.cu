@@ -24,17 +24,69 @@
 
 #include <curand_kernel.h>
 
+using color = vec3;
+using point3 = vec3;
+
 __constant__ vec3 g_cameraCenter;
 __constant__ vec3 g_pixelDeltaU;
 __constant__ vec3 g_pixelDeltaV;
 __constant__ vec3 g_pixel00Loc;
 __constant__ point3 g_defocusDiskU;
 __constant__ point3 g_defocusDiskV;
+__constant__ world *g_world;
 
-using color = vec3;
-using point3 = vec3;
+__device__ bool hit(const type_and_index *p,  ray& r, interval ray_t, hit_record& rec)
+{
+  bool ret = false;
+  const sphere *hittable_sphere = NULL;
+  switch (p->type)
+  {
+  case 0:
+    hittable_sphere = &(g_world->spheres[p->index]);
+    ret = hit(hittable_sphere, r, ray_t, rec);
+    break;
 
-__device__ color ray_color(const ray& r, const hittable& world, curandStateXORWOW_t &randomState)
+  default:
+    ret = false;
+    break;
+  }
+
+  return ret;
+}
+
+__device__ bool scatter(const type_and_index *p, const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandStateXORWOW_t &randomState)
+{
+  bool ret = false;
+  const lambertian *material_lambertian = NULL;
+  const metal *material_metal = NULL;
+  const dielectric *material_dielectric = NULL;
+
+  switch (p->type)
+  {
+  case 0:
+    material_lambertian = &(g_world->lambertians[p->index]);
+    ret = scatter(material_lambertian, r_in, rec, attenuation, scattered, randomState);
+    break;
+
+  case 1:
+    material_metal = &(g_world->metals[p->index]);
+    ret = scatter(material_metal, r_in, rec, attenuation, scattered, randomState);
+    break;
+
+  case 2:
+    material_dielectric = &(g_world->dielectrics[p->index]);
+    ret = scatter(material_dielectric, r_in, rec, attenuation, scattered, randomState);
+    break;
+
+  default:
+    ret = false;
+    break;
+  }
+
+  return ret;
+}
+
+__device__ color ray_color(const ray& r, const hittable_list& world, curandStateXORWOW_t &randomState)
 {
   ray cur_ray = r;
   color cur_attenuation = color(1.f, 1.f, 1.f);
@@ -42,11 +94,11 @@ __device__ color ray_color(const ray& r, const hittable& world, curandStateXORWO
   for(int i = 0; i < (RTOW_MAX_DEPTH); i++)
   {
     hit_record rec;
-    if (world.hit(cur_ray, interval(0.001f, RTOW_FLT_MAX), rec))
+    if (hit(&world, cur_ray, interval(0.001f, RTOW_FLT_MAX), rec))
     {
       ray scattered;
       color attenuation;
-      if (rec.mat->scatter(cur_ray, rec, attenuation, scattered, randomState))
+      if (scatter(&(rec.material_ti), cur_ray, rec, attenuation, scattered, randomState))
       {
         cur_attenuation = cur_attenuation * attenuation;
         cur_ray = scattered;
@@ -94,7 +146,7 @@ __device__ ray get_ray(int i, int j, curandStateXORWOW_t &randomState)
   return r;
 }
 
-extern "C" __global__ void render(vec3 *output, unsigned long *world_ptr, unsigned long long randomState)
+extern "C" __global__ void render(vec3 *output, unsigned long long randomState)
 {
   const int indexX = threadIdx.x + blockIdx.x * blockDim.x;
   const int indexY = threadIdx.y + blockIdx.y * blockDim.y;
@@ -104,7 +156,6 @@ extern "C" __global__ void render(vec3 *output, unsigned long *world_ptr, unsign
   }
 
   const int index = indexY * (RTOW_WIDTH) + indexX;
-  hittable *world = reinterpret_cast<hittable *>(world_ptr[0]);
   curandStateXORWOW_t lrs;
   curand_init(randomState, index, 0, &lrs);
   color pixel_color(0, 0, 0);
@@ -112,7 +163,7 @@ extern "C" __global__ void render(vec3 *output, unsigned long *world_ptr, unsign
   for (int sample = 0; sample < (RTOW_SAMPLES_PER_PIXEL); sample++)
   {
     ray r = get_ray(indexX, indexY, lrs);
-    pixel_color += ray_color(r, *world, lrs);
+    pixel_color += ray_color(r, *(g_world->hittable_lists), lrs);
   }
   pixel_color *= (RTOW_PIXEL_SAMPLE_SCALE);
   const interval intensity(0.f, 0.999f);

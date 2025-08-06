@@ -22,38 +22,48 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef HITTABLE_CUH_
-#define HITTABLE_CUH_
+__constant__ RTOW_POD_TYPE_NAME *g_ptr_RTOW_POD_TYPE_NAME;
 
-class material;
-
-class hit_record
+extern "C" __global__ void getPointerSize_RTOW_POD_TYPE_NAME(int *output)
 {
-public:
-  using point3 = vec3;
-  point3 p;
-  vec3 normal;
-  material *mat;
-  float t;
-  bool front_face;
-
-  __device__ void set_face_normal(const ray& r, const vec3& outward_normal)
+  const int index = blockIdx.x * blockDim.x + threadIdx.x;
+  if (index > 0)
   {
-    // Sets the hit record normal vector.
-    // NOTE: the parameter `outward_normal` is assumed to have unit length.
-
-    front_face = dot(r.direction(), outward_normal) < 0;
-    normal = front_face ? outward_normal : -outward_normal;
+    return;
   }
-};
+  *output = sizeof(RTOW_POD_TYPE_NAME *);
+}
 
-class hittable
+extern "C" __global__ void getPODSize_RTOW_POD_TYPE_NAME(
+        int *sz)
 {
-public:
-  __device__ virtual ~hittable()
+  const int index = blockIdx.x * blockDim.x + threadIdx.x;
+  if (index > 0)
   {
+    return;
   }
-  __device__ virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
-};
+  *sz = sizeof(RTOW_POD_TYPE_NAME);
+}
 
-#endif // HITTABLE_CUH_
+extern "C" __global__ void copyPOD_RTOW_POD_TYPE_NAME(
+        RTOW_POD_TYPE_NAME *out,
+        const RTOW_POD_TYPE_NAME *__restrict__ in)
+{
+  const int index = blockIdx.x * blockDim.x + threadIdx.x;
+  if (index > 0)
+  {
+    return;
+  }
+  *out = *in;
+}
+
+extern "C" __global__ void copyPODFromGlobal_RTOW_POD_TYPE_NAME(
+        RTOW_POD_TYPE_NAME *out)
+{
+  const int index = blockIdx.x * blockDim.x + threadIdx.x;
+  if (index > RTOW_POD_COPY_LENGTH)
+  {
+    return;
+  }
+  out[index] = g_ptr_RTOW_POD_TYPE_NAME[index];
+}

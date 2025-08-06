@@ -22,34 +22,27 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef HITTABLE_LIST_CUH_
-#define HITTABLE_LIST_CUH_
+#ifndef HIT_RECORD_CUH_
+#define HIT_RECORD_CUH_
 
-#pragma pack(push, 4)
-struct hittable_list
+class hit_record
 {
-  type_and_index *hittable_ti;
-  int object_count;
-};
-#pragma pack(pop)
+public:
+  using point3 = vec3;
+  point3 p;
+  vec3 normal;
+  type_and_index material_ti;
+  float t;
+  bool front_face;
 
-bool hit(const hittable_list *p, ray& r, interval ray_t, hit_record& rec)
-{
-  hit_record temp_rec;
-  bool hit_anything = false;
-  auto closest_so_far = ray_t.max;
-
-  for (int i = 0; i < p->object_count; i++)
+  __device__ void set_face_normal(const ray& r, const vec3& outward_normal)
   {
-    if (hit(&(p->hittable_ti[i]), r, interval(ray_t.min, closest_so_far), temp_rec))
-    {
-      hit_anything = true;
-      closest_so_far = temp_rec.t;
-      rec = temp_rec;
-    }
+    // Sets the hit record normal vector.
+    // NOTE: the parameter `outward_normal` is assumed to have unit length.
+
+    front_face = dot(r.direction(), outward_normal) < 0;
+    normal = front_face ? outward_normal : -outward_normal;
   }
+};
 
-  return hit_anything;
-}
-
-#endif // HITTABLE_LIST_CUH_
+#endif // HIT_RECORD_CUH_

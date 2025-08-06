@@ -22,84 +22,120 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from typing import Tuple
+
+import numpy as np
 import cupy as cp
 
-def check_pointer_size(module: cp.RawModule) -> None:
-    sz = cp.empty((1), dtype=cp.int32)
-    gpu_func = module.get_function('getPointerSize')
-    sz_block = 1,
-    sz_grid = 1,
-    gpu_func(
-        block=sz_block, grid=sz_grid,
-        args=(sz)
-    )
-    cp.cuda.runtime.deviceSynchronize()
-    sz = sz.get()
-    sz = int(sz[0])
-
-    assert sz == 8 # pointer size on GPU is assumed to 64bit
+import dtypes
+from util_cuda import upload_constant
 
 class world():
-    def __init__(self, module: cp.RawModule) -> None:
-        check_pointer_size(module)
-        self.module = module
-        self.count = 0
-        self.is_world_created = False
-    def __copy__(self):
-        raise TypeError("copying of this object is not allowed")
+    def __init__(self):
+        self.spheres = []
+        self.lambertians = []
+        self.metals = []
+        self.dielectrics = []
+        self.spheres_gpu = None
+        self.lambertians_gpu = None
+        self.metals_gpu = None
+        self.dielectrics_gpu = None
 
-    def __deepcopy__(self, memo):
-        raise TypeError("deep copying of this object is not allowed")
+    def add_lambertian(self, albedo: Tuple[float, float, float]) -> Tuple[int, int]:
+        material_type = 0
+        material_index = len(self.lambertians)
+        self.lambertians.append((albedo,))
+        return material_type, material_index
 
-    def create_world(self) -> None:
-        if self.is_world_created:
-            return
+    def add_metal(self, albedo: Tuple[float, float, float], fuzz: float) -> Tuple[int, int]:
+        material_type = 1
+        material_index = len(self.metals)
+        self.metals.append((albedo, fuzz))
+        return material_type, material_index
 
-        self.max_count = 22 * 22 + 4
-        spheres_ptr = cp.zeros((self.max_count,), dtype=cp.uint64)
-        self.world_ptr = cp.zeros((1,), dtype=cp.uint64)
-        count = cp.zeros((1,), dtype=cp.int32)
+    def add_dielectrics(self, refraction_index: float) -> Tuple[int, int]:
+        material_type = 2
+        material_index = len(self.dielectrics)
+        self.dielectrics.append(refraction_index)
+        return material_type, material_index
 
-        random_state = cp.random.randint(0, 2**63 - 1, (3,), dtype=cp.uint64)
+    def add_sphere(self, center: Tuple[float, float, float], radius: float, type_and_index: Tuple[int, int]) -> None:
+        sph = center, radius, type_and_index
+        self.spheres.append(sph)
 
-        sz_block = 1,
-        sz_grid = 1,
-        gpu_func = self.module.get_function('createSpheres')
-        gpu_func(
-            block=sz_block, grid=sz_grid,
-            args=(spheres_ptr,
-                  count,
-                  cp.int32(self.max_count),
-                  random_state)
-        )
-        cp.cuda.runtime.deviceSynchronize()
-        self.count = int(count.get()[0])
-        assert self.count <= self.max_count
+    def create(self) -> None:
+        self.spheres = []
+        self.lambertians = []
+        self.metals = []
+        self.dielectrics = []
 
-        gpu_func = self.module.get_function('createWorld')
-        gpu_func(
-            block=sz_block, grid=sz_grid,
-            args=(self.world_ptr,
-                  spheres_ptr,
-                  cp.int32(self.count))
-        )
-        cp.cuda.runtime.deviceSynchronize()
-        self.is_world_created = True
+        material_ti = self.add_lambertian((0.5, 0.5, 0.5))
+        self.add_sphere((0, -1000, 0), 1000, material_ti)
 
-    def destroy_world(self) -> None:
-        if not self.is_world_created:
-            return
-        sz_block = 1,
-        sz_grid = 1,
-        gpu_func = self.module.get_function('destroyWorld')
-        gpu_func(
-            block=sz_block, grid=sz_grid,
-            args=(self.world_ptr)
-        )
-        cp.cuda.runtime.deviceSynchronize()
-        self.world_ptr[:] = 0
-        self.is_world_created = False
+        material_ti = self.add_dielectrics((1.5))
+        self.add_sphere((0, 1, 0), 1, material_ti)
 
-    def __del__(self) -> None:
-        if self.is_world_created:
-            self.destroy_world()
+        material_ti = self.add_lambertian((0.4, 0.2, 0.1))
+        self.add_sphere((-4, 1, 0), 1, material_ti)
+
+        material_ti = self.add_metal((0.7, 0.6, 0.5), 0)
+        self.add_sphere((4, 1, 0), 1, material_ti)
+
+        rand_func = lambda sz: np.random.rand(sz).astype(np.float32)
+        rand_min_max_func = lambda low, high, sz: np.random.uniform(low, high, sz).astype(np.float32)
+        for a in range(-11, 11):
+            for b in range(-11, 11):
+                choose_mat = rand_func(1)
+                center = np.array([a + 0.9 * rand_func(1)[0], 0.2, b + 0.9 * rand_func(1)[0]], dtype=np.float32)
+
+                if np.linalg.norm((center - np.array([4, 0.2, 0], dtype=np.float32))) > 0.9:
+                    if choose_mat < 0.8:
+                        # diffuse
+                        albedo = rand_func(3) * rand_func(3)
+                        albedo = tuple(albedo.tolist())
+                        material_ti = self.add_lambertian(albedo)
+                    elif choose_mat < 0.95:
+                        # metal
+                        albedo = rand_min_max_func(0.5, 1.0, 3) * rand_min_max_func(0.5, 1.0, 3)
+                        albedo = tuple(albedo.tolist())
+                        fuzz = float(rand_min_max_func(0, 0.5, 1)[0])
+                        material_ti = self.add_metal(albedo, fuzz)
+                    else:
+                        # glass
+                        material_ti = self.add_dielectrics((1.5))
+
+                    center = tuple(center.tolist())
+                    self.add_sphere(center, 0.2, material_ti)
+
+        self.hittable_ti = np.empty((len(self.spheres),), dtype=dtypes.type_and_index)
+        self.hittable_ti['type'] = 0
+        self.hittable_ti['index'] = np.arange(self.hittable_ti.shape[0])
+
+        upload_dict = {}
+        upload_dict['hittable_ti'] = (self.hittable_ti, dtypes.type_and_index)
+        upload_dict['sphere'] = (self.spheres, dtypes.sphere)
+        upload_dict['lambertian'] = (self.lambertians, dtypes.lambertian)
+        upload_dict['metal'] = (self.metals, dtypes.metal)
+        upload_dict['dielectric'] = (self.dielectrics, dtypes.dielectric)
+        gpu_dict = {}
+        for name, data in upload_dict.items():
+            arr = np.array(data[0], dtype=data[1])
+            arr_gpu = cp.frombuffer(arr.tobytes(), dtype=cp.byte)
+            gpu_dict[name + '_gpu'] = arr_gpu
+        self.hittable_ti_gpu = gpu_dict['hittable_ti_gpu']
+        self.spheres_gpu = gpu_dict['sphere_gpu']
+        self.lambertians_gpu = gpu_dict['lambertian_gpu']
+        self.metals_gpu = gpu_dict['metal_gpu']
+        self.dielectrics_gpu = gpu_dict['dielectric_gpu']
+
+    def setup_module(self, module: cp.RawModule) -> None:
+        hl = np.empty((1,), dtype=dtypes.hittable_list)
+        hl['object_count'] = len(self.hittable_ti_gpu)
+        hl['hittable_ti'] = self.hittable_ti_gpu.data.ptr
+
+        self.hl_gpu = cp.frombuffer(hl.tobytes(), dtype=cp.byte)
+        w = np.empty((1,), dtype=dtypes.world)
+        w['pointers'] = (self.hl_gpu.data.ptr, self.hittable_ti_gpu.data.ptr, self.spheres_gpu.data.ptr, \
+                         self.lambertians_gpu.data.ptr, self.metals_gpu.data.ptr, self.dielectrics_gpu.data.ptr)
+        self.world_gpu = cp.frombuffer(w.tobytes(), dtype=cp.byte)
+        upload_constant(module, np.array([self.world_gpu.data.ptr]), 'g_world', cp.uint64)

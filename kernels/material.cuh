@@ -25,6 +25,26 @@
 #ifndef MATERIAL_CUH_
 #define MATERIAL_CUH_
 
+using color = vec3;
+
+#pragma pack(push, 4)
+struct lambertian
+{
+  color albedo;
+};
+
+struct metal
+{
+  color albedo;
+  float fuzz;
+};
+
+struct dielectric
+{
+  float refraction_index;
+};
+#pragma pack(pop)
+
 struct hit_record;
 using color = vec3;
 
@@ -41,94 +61,56 @@ __device__ inline vec3 refract(const vec3& uv, const vec3& n, float etai_over_et
   return r_out_perp + r_out_parallel;
 }
 
-class material
+__device__ bool scatter(const lambertian *p, const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandStateXORWOW_t &randomState)
 {
-public:
-  __device__ virtual ~material()
+  auto scatter_direction = rec.normal + random_unit_vector(randomState);
+  if (scatter_direction.near_zero())
   {
-  }
-  __device__ virtual bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandStateXORWOW_t &randomState) const
-  {
-    return false;
-  }
-};
-
-class lambertian : public material
-{
-public:
-  __device__ lambertian(const color& albedo) : albedo(albedo)
-  {
-  }
-  __device__ bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandStateXORWOW_t &randomState) const override
-  {
-    auto scatter_direction = rec.normal + random_unit_vector(randomState);
-    if (scatter_direction.near_zero())
-    {
       scatter_direction = rec.normal;
-    }
-    scattered = ray(rec.p, scatter_direction);
-    attenuation = albedo;
-    return true;
   }
+  scattered = ray(rec.p, scatter_direction);
+  attenuation = p->albedo;
 
-  color albedo;
-};
+  return true;
+}
 
-class metal : public material
+__device__ bool scatter(const metal *p, const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandStateXORWOW_t &randomState)
 {
-public:
-  __device__ metal(const color& albedo, float fuzz) : albedo(albedo), fuzz(fuzz < 1 ? fuzz : 1)
-  {
-  }
-  __device__ bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandStateXORWOW_t &randomState) const override
-  {
-    vec3 reflected = reflect(r_in.direction(), rec.normal);
-    reflected = unit_vector(reflected) + (fuzz * random_unit_vector(randomState));
-    scattered = ray(rec.p, reflected);
-    attenuation = albedo;
-    return (dot(scattered.direction(), rec.normal) > 0);
-  }
+  vec3 reflected = reflect(r_in.direction(), rec.normal);
+  reflected = unit_vector(reflected) + (p->fuzz * random_unit_vector(randomState));
+  scattered = ray(rec.p, reflected);
+  attenuation = p->albedo;
 
-  color albedo;
-  float fuzz;
-};
+  return (dot(scattered.direction(), rec.normal) > 0);
+}
 
-class dielectric : public material
+__device__ float reflectance(const dielectric *p, float cosine, float refraction_index)
 {
-public:
-  __device__ dielectric(float refraction_index) : refraction_index(refraction_index) {}
+  // Use Schlick's approximation for reflectance.
+  auto r0 = (1 - p->refraction_index) / (1 + p->refraction_index);
+  r0 = r0 * r0;
+  return r0 + (1 - r0) * powf((1 - cosine), 5);
+}
 
-  __device__ bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandStateXORWOW_t &randomState) const override
-  {
-    attenuation = color(1.0f, 1.0f, 1.0f);
-    float ri = rec.front_face ? (1.0f/refraction_index) : refraction_index;
+__device__ bool scatter(const dielectric *p, const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandStateXORWOW_t &randomState)
+{
+  attenuation = color(1.0f, 1.0f, 1.0f);
+  float ri = rec.front_face ? (1.0f/p->refraction_index) : p->refraction_index;
 
-    vec3 unit_direction = unit_vector(r_in.direction());
-    float cos_theta = fminf(dot(-unit_direction, rec.normal), 1.0f);
-    float sin_theta = sqrtf(1.0 - cos_theta*cos_theta);
+  vec3 unit_direction = unit_vector(r_in.direction());
+  float cos_theta = fminf(dot(-unit_direction, rec.normal), 1.0f);
+  float sin_theta = sqrtf(1.0 - cos_theta*cos_theta);
 
-    bool cannot_refract = ri * sin_theta > 1.0;
-    vec3 direction;
+  bool cannot_refract = ri * sin_theta > 1.0;
+  vec3 direction;
 
-    if (cannot_refract || reflectance(cos_theta, ri) > curand_uniform(&randomState))
-      direction = reflect(unit_direction, rec.normal);
-    else
-      direction = refract(unit_direction, rec.normal, ri);
+  if (cannot_refract || reflectance(p, cos_theta, ri) > curand_uniform(&randomState))
+    direction = reflect(unit_direction, rec.normal);
+  else
+    direction = refract(unit_direction, rec.normal, ri);
 
-    scattered = ray(rec.p, direction);
-    return true;
-  }
+  scattered = ray(rec.p, direction);
+  return true;
+}
 
-  // Refractive index in vacuum or air, or the ratio of the material's refractive index over
-  // the refractive index of the enclosing media
-  float refraction_index;
-
-  __device__ static float reflectance(float cosine, float refraction_index)
-  {
-    // Use Schlick's approximation for reflectance.
-    auto r0 = (1 - refraction_index) / (1 + refraction_index);
-    r0 = r0 * r0;
-    return r0 + (1 - r0) * powf((1 - cosine), 5);
-  }
-};
 #endif // MATERIAL_CUH_
