@@ -130,7 +130,7 @@ class world():
 
     def setup_module(self, module: cp.RawModule) -> None:
         hl = np.empty((1,), dtype=dtypes.hittable_list)
-        hl['object_count'] = len(self.hittable_ti_gpu)
+        hl['object_count'] = len(self.hittable_ti)
         hl['hittable_ti'] = self.hittable_ti_gpu.data.ptr
 
         self.hl_gpu = cp.frombuffer(hl.tobytes(), dtype=cp.byte)
