@@ -33,7 +33,7 @@ struct hittable_list
 };
 #pragma pack(pop)
 
-bool hit(const hittable_list *p, ray& r, interval ray_t, hit_record& rec)
+__device__ bool hit(const hittable_list *p, ray& r, interval ray_t, hit_record& rec)
 {
   hit_record temp_rec;
   bool hit_anything = false;

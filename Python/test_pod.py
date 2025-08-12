@@ -120,7 +120,7 @@ def setup_module() -> Generator[Dict[str, Any], Any, None]:
         test_kernels.append((kernel_name_ptr_sz, kernel_name_sz, kernel_name_copy, kernel_name_copy_global))
         test_keys.append(key_name_global)
 
-    module = cp.RawModule(code=cuda_source, enable_cooperative_groups=True)
+    module = cp.RawModule(code=cuda_source)
     module.compile()
 
     yield {
