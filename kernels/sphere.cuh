@@ -22,8 +22,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef SHPERE_CUH_
-#define SHPERE_CUH_
+#ifndef SPHERE_CUH_
+#define SPHERE_CUH_
 
 using color = vec3;
 using point3 = vec3;
@@ -81,4 +81,4 @@ private:
   material *mat;
 };
 
-#endif // SHPERE_CUH_
+#endif // SPHERE_CUH_
