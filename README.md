@@ -31,7 +31,7 @@ The resulting image data is then processed and displayed inline within a Jupyter
 As shown in Fig. 2, this chapter demonstrates the initial image output.
 
 <figure style="padding: 15px; display: inline-block;">
-  <img src="images/chapter02.png" width="255px" alt="retult of chapter 02.">
+  <img src="images/chapter02.png" width="255px" alt="result of chapter 02.">
   <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
     Fig. 2: the rendering result of chapter 2.
   </figcaption>
@@ -51,7 +51,7 @@ The `ray_color` function, which determines the background gradient, is also impl
 The rendering result of this chapter is depicted in Fig. 3.
 
 <figure style="padding: 15px; display: inline-block;">
-  <img src="images/chapter04.png" width="400px" alt="retult of chapter 04.">
+  <img src="images/chapter04.png" width="400px" alt="result of chapter 04.">
   <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
     Fig. 3: the rendering result of chapter 4.
   </figcaption>
@@ -70,7 +70,7 @@ All vector operations (`dot`, `+`, `-`, `*`, `/`, `unit_vector`) essential for r
 Fig. 4 displays the rendering result for this chapter.
 
 <figure style="padding: 15px; display: inline-block;">
-  <img src="images/chapter05.png" width="400px" alt="retult of chapter 05.">
+  <img src="images/chapter05.png" width="400px" alt="result of chapter 05.">
   <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
     Fig. 4: the rendering result of chapter 5.
   </figcaption>
@@ -88,7 +88,7 @@ All core logic—including simplified ray-sphere intersection, surface normal ca
 The rendering result of this chapter is presented in Fig. 5.
 
 <figure style="padding: 15px; display: inline-block;">
-  <img src="images/chapter06.png" width="400px" alt="retult of chapter 06.">
+  <img src="images/chapter06.png" width="400px" alt="result of chapter 06.">
   <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
     Fig. 5: the rendering result of chapter 6.
   </figcaption>
@@ -109,7 +109,7 @@ This design cleanly separates the Python-side camera configuration and CUDA kern
 Fig. 6 illustrates the rendering result after this refactoring.
 
 <figure style="padding: 15px; display: inline-block;">
-  <img src="images/chapter07.png" width="400px" alt="retult of chapter 07.">
+  <img src="images/chapter07.png" width="400px" alt="result of chapter 07.">
   <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
     Fig. 6: the rendering result of chapter 7.
   </figcaption>
@@ -127,7 +127,7 @@ This loop, performing `samples_per_pixel` iterations, is computationally intensi
 Fig. 7 demonstrates the effect of antialiasing on the rendering result.
 
 <figure style="padding: 15px; display: inline-block;">
-  <img src="images/chapter08.png" width="400px" alt="retult of chapter 08.">
+  <img src="images/chapter08.png" width="400px" alt="result of chapter 08.">
   <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
     Fig. 7: the rendering result of chapter 8.
   </figcaption>
@@ -142,10 +142,10 @@ git checkout -b chapter08 origin/chapter08
 The author's implementation is built around replacing the textbook's recursive `ray_color` calls with an iterative loop within the CUDA kernel, a critical change for efficient GPU computation.
 All random number generation now uses cuRAND, providing robust and high-quality randomness essential for accurate light scattering.
 This setup ensures that complex material interactions, including ray bouncing and Lambertian scattering, are processed entirely in parallel on the GPU, maximizing performance.
-Fig. 8 shows the rendering result with diffuse materials.
+Fig. 8 shows the rendering result of diffuse materials.
 
 <figure style="padding: 15px; display: inline-block;">
-  <img src="images/chapter09.png" width="400px" alt="retult of chapter 09.">
+  <img src="images/chapter09.png" width="400px" alt="result of chapter 09.">
   <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
     Fig. 8: the rendering result of chapter 9.
   </figcaption>
@@ -173,7 +173,7 @@ Note that the current memory management approach using raw pointers and explicit
 Fig. 9 presents the rendering result incorporating metal materials.
 
 <figure style="padding: 15px; display: inline-block;">
-  <img src="images/chapter10.png" width="400px" alt="retult of chapter 10.">
+  <img src="images/chapter10.png" width="400px" alt="result of chapter 10.">
   <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
     Fig. 9: the rendering result of chapter 10.
   </figcaption>
@@ -199,10 +199,10 @@ Key aspects of this implementation include:
 * cuRAND for Reflectance Probability: The Schlick Approximation's probabilistic reflection is implemented using `curand_uniform(&randomState)`, ensuring GPU-accelerated random number generation for realistic material behavior.
 These refinements in memory management and the consistent use of GPU-optimized functions are important for efficiently rendering scenes with complex dielectric materials.
 As previously mentioned, the current memory management approach using raw pointers and explicit allocation/deallocation in kernels carries inherent risks, which will be discussed in more detail in a later section.
-Fig. 10 illustrates the rendering result with dielectric materials.
+Fig. 10 illustrates the rendering result of dielectric materials.
 
 <figure style="padding: 15px; display: inline-block;">
-  <img src="images/chapter11.png" width="400px" alt="retult of chapter 11.">
+  <img src="images/chapter11.png" width="400px" alt="result of chapter 11.">
   <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
     Fig. 10: the rendering result of chapter 11.
   </figcaption>
@@ -223,10 +223,10 @@ Key aspects of this implementation include:
 * Constant Memory Transfer: The computed camera parameters (e.g., `g_cameraCenter`, `g_pixel00_loc`, `g_pixelDeltaU`, `g_pixelDeltaV`, `g_cameraU`, `g_cameraV`, `g_cameraW`) are transferred to CUDA's constant memory via `upload_constant`. This ensures efficient, read-only access to these parameters by all threads within the GPU kernel.
 
 This approach separates the camera setup logic from the GPU rendering loop, making the CUDA kernel more focused on ray tracing calculations while still benefiting from efficient data transfer.
-Fig. 11 displays the rendering result with a positionable camera.
+Fig. 11 displays the rendering result of a positionable camera.
 
 <figure style="padding: 15px; display: inline-block;">
-  <img src="images/chapter12.png" width="400px" alt="retult of chapter 12.">
+  <img src="images/chapter12.png" width="400px" alt="result of chapter 12.">
   <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
     Fig. 11: the rendering result of chapter 12.
   </figcaption>
@@ -247,10 +247,10 @@ Key aspects of this implementation include:
 * High-Quality Random Numbers: Crucially, the random sampling of the defocus disk for blur relies on the high-quality random numbers provided by cuRAND. This ensures accurate and visually pleasing blur effects.
 
 This approach ensures that the computationally intensive task of generating rays with defocus blur is fully offloaded to the GPU, maintaining high performance for rendering blurred images.
-Fig. 12 shows the rendering result with defocus blur applied.
+Fig. 12 shows the rendering result of defocus blur applied.
 
 <figure style="padding: 15px; display: inline-block;">
-  <img src="images/chapter13.png" width="400px" alt="retult of chapter 13.">
+  <img src="images/chapter13.png" width="400px" alt="result of chapter 13.">
   <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
     Fig. 12: the rendering result of chapter 13.
   </figcaption>
@@ -280,15 +280,15 @@ git checkout -b chapter14 origin/chapter14
 ```
 
 ## Performance Analysis
-This section presents a comparative analysis of the execution time for a ray tracing application on a GPU (NVIDIA GeForce RTX 4070 Ti) versus a CPU (Intel Core i9-11900 @ 2.50GHz, utilizing a single-threaded reference implementation).
+This section presents a comparative analysis of the execution time for a ray tracing application on a GPU (NVIDIA GeForce RTX 3080 Ti) versus a CPU (Intel Core i7-10700 @ 2.90GHz, utilizing a single-threaded reference implementation).
 The benchmark involved rendering a 1200 x 675 pixel image, with performance evaluated based on varying `samples_per_pixel` and `max_depth` parameters.
 
 The data unequivocally demonstrates the GPU’s overwhelming performance advantage for ray tracing tasks.
 Across all tested configurations, the GPU completed rendering significantly faster than the CPU.
-Even at `samples_per_pixel = 20` and `max_depth = 10`, the GPU took approximately 1,982 ms, whereas the CPU required about 58,691 ms, making the GPU nearly 30 times faster.
+Even at `samples_per_pixel = 20` and `max_depth = 10`, the GPU took approximately 1,964 ms, whereas the CPU required about 76,103 ms, making the GPU nearly 39 times faster.
 This drastic difference becomes even more pronounced and critical at higher quality settings.
-For instance, when rendering with `samples_per_pixel = 500` and `max_depth = 50`—a configuration essential for achieving high visual fidelity in diffuse scenes—the GPU completed the task in approximately 84,386 ms (about 84 seconds), whereas the CPU struggled, requiring approximately 1,488,910 ms (nearly 25 minutes).
-This staggering difference, with the GPU performing over 17 times faster, highlights its superior capability in handling highly parallelizable computations inherent in ray tracing, particularly for demanding, high-quality renders that are simply impractical on a single-threaded CPU implementation within a reasonable timeframe.
+For instance, when rendering with `samples_per_pixel = 500` and `max_depth = 50`—a configuration essential for achieving high visual fidelity in diffuse scenes—the GPU completed the task in approximately 130,255 ms (about 130 seconds), whereas the CPU struggled, requiring approximately 2,437,340 ms (nearly 41 minutes).
+This staggering difference, with the GPU performing over 19 times faster, highlights its superior capability in handling highly parallelizable computations inherent in ray tracing, particularly for demanding, high-quality renders that are simply impractical on a single-threaded CPU implementation within a reasonable timeframe.
 
 Crucially, `samples_per_pixel` also significantly affects image quality, particularly for Lambertian (diffuse) surfaces.
 In implementations like the one described in "Ray Tracing in One Weekend," each ray hitting a Lambertian surface randomly reflects a single new ray.
@@ -345,6 +345,32 @@ This is because more samples per pixel lead to a greater number of rays being av
 Conversely, lower `samples_per_pixel` values result in more noticeable graininess, particularly in areas with diffuse lighting, due to insufficient sampling.
 Therefore, achieving a high-quality, noise-free render necessitates a sufficiently high `samples_per_pixel` value, which, as demonstrated, is far more practical on a GPU.
 
+A second set of performance graphs has been presented to provide a more comprehensive comparison.
+Fig. 17 illustrates the execution time of the Plain Old Data (POD) based GPU implementation, revealing its superior performance and linear scalability.
+Fig. 18 and Fig. 19 quantify this advantage, showing that the POD-based version is over 150 times faster than the single-threaded CPU implementation and approximately 6-9 times faster than the original object-oriented programming (OOP) based GPU implementation.
+As will be discussed in the [Important Note](#important-note) section, this significant performance difference highlights how distinct design paradigms can profoundly affect performance in GPU-accelerated computing.
+
+<figure style="padding: 15px; display: inline-block;">
+  <img src="images/gpu_pod_spp_vs_md.svg" width="800px" alt="GPU (POD) ray tracing performance, showing execution time in seconds versus samples per pixel and max depth.">
+  <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
+    Fig. 17: GPU (POD) ray tracing performance by `samples_per_pixel` and `max_depth`
+  </figcaption>
+</figure>
+
+<figure style="padding: 15px; display: inline-block;">
+  <img src="images/cpu_gpu_pod_speedup_ratio.svg" width="800px" alt="CPU vs. GPU (POD) ray tracing performance ratio, showing speedup factor (CPU time / GPU time) versus samples per pixel and max depth.">
+  <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
+    Fig. 18: CPU vs. GPU (POD) ray tracing performance ratio
+  </figcaption>
+</figure>
+
+<figure style="padding: 15px; display: inline-block;">
+  <img src="images/gpu_gpu_pod_speedup_ratio.svg" width="800px" alt="GPU vs. GPU (POD) ray tracing performance ratio, showing speedup factor (CPU time / GPU time) versus samples per pixel and max depth.">
+  <figcaption style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #555;">
+    Fig. 19: GPU vs. GPU (POD) ray tracing performance ratio
+  </figcaption>
+</figure>
+
 ## Important Note
 The author's decision to implement "Ray Tracing in One Weekend" using CuPy's RawModule for the CUDA backend was driven by two key objectives.
 First, it served as a practical learning exercise in ray tracing itself.
@@ -354,7 +380,7 @@ However, this flexibility comes with a significant challenge: managing GPU resou
 While this implementation surprisingly functions, it starkly illustrates the power and inherent dangers of combining CuPy's raw module capabilities with direct CUDA C++ memory allocation for polymorphic types.
 
 Ideally, for robust GPU memory management with CuPy's RawModule, CuPy should handle memory allocation, and data should be transferred using Plain Old Data (POD) structures.
-The use of polymorphism, while powerful in C++, is generally best avoided when directly managing GPU memory with raw pointers via CuPy's RawModule, as it complicates ownership and deallocation, increasing the risk of memory leaks or crashes.
+The use of object-oriented programming (OOP) concepts, particularly polymorphism, while powerful in C++, is generally best avoided when directly managing GPU memory with raw pointers via CuPy's RawModule, as it complicates ownership and deallocation, increasing the risk of memory leaks or crashes.
 
 Despite these complexities, this repository is published to demonstrate the exceptional flexibility and power of CuPy's RawModule.
 While the current memory management approach is highly experimental and carries inherent risks, it highlights how CuPy can be leveraged to address highly specialized and performance-critical requirements in GPU programming.
@@ -363,13 +389,20 @@ This serves as a valuable case study for addressing unique challenges with CuPy'
 For readers interested in a more robust and safer approach to GPU memory management with CuPy's RawModule, a parallel implementation using Plain Old Data (POD) structures is available in a separate branch.
 This approach completely avoids explicit new and delete calls within the CUDA kernels, relying instead on CuPy to manage all memory allocations.
 
-The implementation in this branch, which can be checked out using the following command, addresses the memory management risks highlighted above.
+The POD-based implementation, a more robust and safer approach to GPU memory management, also demonstrates a substantial performance increase.
+While the object-oriented programming (OOP) version achieved a significant speedup of over 19x compared to the single-threaded CPU implementation, the POD-based version is approximately 6-9 times faster than its OOP counterpart.
+
+This remarkable performance gain is attributed to two key architectural advantages of the POD-based design: improved memory access locality and a reduction in instruction-level overhead.
+By arranging data in contiguous blocks, the GPU can more effectively utilize its cache, while the use of static dispatch via `switch` statements minimizes the performance penalties associated with virtual function calls in highly parallel execution environments.
+Although the POD implementation is more complex to write, and requires a dedicated unit test (`test_pod.py`) to ensure data alignment and integrity, it showcases a powerful and optimized approach to GPU programming.
+
+It's important to note that the purpose of this repository is not to argue that POD is the only correct way to implement a ray tracer.
+Rather, it serves as a valuable case study to highlight how different software design paradigms directly impact performance in GPU-accelerated computing.
+
+The implementation in this branch, which can be checked out using the following command, addresses the memory management risks and the performance increase highlighted above.
 ```sh
 git checkout -b chapter14-pod origin/chapter14-pod
 ```
-This POD-based design is a clear example of how to implement a more maintainable and reliable ray tracer with CuPy's RawModule.
-It is important to note that even with a POD-based approach, rigorous unit testing for data alignment between the CPU and GPU is still crucial to ensure data integrity and prevent subtle bugs.
-
 This robust implementation also shows that while direct C++ polymorphism is not used for memory management, the full power of CUDA C++ is still at one's disposal.
 Features like `__device__` function overloading and the use of non-polymorphic C++ classes within the kernels remain fully viable for organizing and executing GPU code.
 
