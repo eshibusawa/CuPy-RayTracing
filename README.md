@@ -349,6 +349,7 @@ A second set of performance graphs has been presented to provide a more comprehe
 Fig. 17 illustrates the execution time of the Plain Old Data (POD) based GPU implementation, revealing its superior performance and linear scalability.
 Fig. 18 and Fig. 19 quantify this advantage, showing that the POD-based version is over 150 times faster than the single-threaded CPU implementation and approximately 6-9 times faster than the original object-oriented programming (OOP) based GPU implementation.
 As will be discussed in the [Important Note](#important-note) section, this significant performance difference highlights how distinct design paradigms can profoundly affect performance in GPU-accelerated computing.
+For a detailed analysis of these performance differences, refer to [the full profiler report](./reports/performance_oop_vs_pod.md).
 
 <figure style="padding: 15px; display: inline-block;">
   <img src="images/gpu_pod_spp_vs_md.svg" width="800px" alt="GPU (POD) ray tracing performance, showing execution time in seconds versus samples per pixel and max depth.">
